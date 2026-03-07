@@ -26,6 +26,13 @@ export default function Sidebar() {
           <Plus size={20} />
           <span className="text-sm">Add New Land</span>
         </Link>
+        <Link
+          href="/owner/add-land"
+          className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-xl font-semibold transition-all"
+        >
+          <Plus size={20} />
+          <span className="text-sm">logs</span>
+        </Link>
       </nav>
     </aside>
   );
