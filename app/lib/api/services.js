@@ -5,150 +5,259 @@ import { apiGet, apiPost, apiPut, apiDelete } from "./client";
  * Authentication Service
  */
 export const authService = {
-  login: (email, password) =>
-    apiPost(API_ENDPOINTS.AUTH.LOGIN, { email, password }),
+  login: function(email, password) {
+    let endpoint = API_ENDPOINTS.AUTH.LOGIN;
+    let data = { email: email, password: password };
+    let result = apiPost(endpoint, data);
+    return result;
+  },
 
-  signup: (userData) => apiPost(API_ENDPOINTS.AUTH.SIGNUP, userData),
+  signup: function(userData) {
+    let result = apiPost(API_ENDPOINTS.AUTH.SIGNUP, userData);
+    return result;
+  },
 
-  logout: () => apiPost(API_ENDPOINTS.AUTH.LOGOUT),
+  logout: function() {
+    let result = apiPost(API_ENDPOINTS.AUTH.LOGOUT);
+    return result;
+  },
 
-  refreshToken: () => apiPost(API_ENDPOINTS.AUTH.REFRESH),
+  refreshToken: function() {
+    let result = apiPost(API_ENDPOINTS.AUTH.REFRESH);
+    return result;
+  },
 
-  verifyEmail: (token) => apiPost(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token }),
+  verifyEmail: function(token) {
+    let data = { token: token };
+    let result = apiPost(API_ENDPOINTS.AUTH.VERIFY_EMAIL, data);
+    return result;
+  }
 };
 
 /**
  * Properties Service
  */
 export const propertyService = {
-  listProperties: (filters = {}) =>
-    apiGet(API_ENDPOINTS.PROPERTIES.LIST, { params: new URLSearchParams(filters) }),
+  listProperties: function(filters) {
+    if (filters === undefined) {
+      filters = {};
+    }
+    let paramsObj = { params: new URLSearchParams(filters) };
+    let result = apiGet(API_ENDPOINTS.PROPERTIES.LIST, paramsObj);
+    return result;
+  },
 
-  getProperty: (id) => apiGet(API_ENDPOINTS.PROPERTIES.GET_ONE(id)),
+  getProperty: function(id) {
+    let url = API_ENDPOINTS.PROPERTIES.GET_ONE(id);
+    let result = apiGet(url);
+    return result;
+  },
 
-  createProperty: (propertyData) =>
-    apiPost(API_ENDPOINTS.PROPERTIES.CREATE, propertyData),
+  createProperty: function(propertyData) {
+    let result = apiPost(API_ENDPOINTS.PROPERTIES.CREATE, propertyData);
+    return result;
+  },
 
-  updateProperty: (id, propertyData) =>
-    apiPut(API_ENDPOINTS.PROPERTIES.UPDATE(id), propertyData),
+  updateProperty: function(id, propertyData) {
+    let url = API_ENDPOINTS.PROPERTIES.UPDATE(id);
+    let result = apiPut(url, propertyData);
+    return result;
+  },
 
-  deleteProperty: (id) => apiDelete(API_ENDPOINTS.PROPERTIES.DELETE(id)),
+  deleteProperty: function(id) {
+    let url = API_ENDPOINTS.PROPERTIES.DELETE(id);
+    let result = apiDelete(url);
+    return result;
+  },
 
-  searchProperties: (query, filters = {}) =>
-    apiGet(API_ENDPOINTS.PROPERTIES.SEARCH, {
-      params: new URLSearchParams({ q: query, ...filters }),
-    }),
+  searchProperties: function(query, filters) {
+    if (filters === undefined) {
+      filters = {};
+    }
+    let myParams = { q: query };
+    for (let key in filters) {
+      myParams[key] = filters[key];
+    }
+    let config = {
+      params: new URLSearchParams(myParams)
+    };
+    let result = apiGet(API_ENDPOINTS.PROPERTIES.SEARCH, config);
+    return result;
+  },
 
-  getPropertiesByOwner: (ownerId) =>
-    apiGet(API_ENDPOINTS.PROPERTIES.BY_OWNER(ownerId)),
+  getPropertiesByOwner: function(ownerId) {
+    let url = API_ENDPOINTS.PROPERTIES.BY_OWNER(ownerId);
+    let result = apiGet(url);
+    return result;
+  }
 };
 
 /**
  * Reviews Service
  */
 export const reviewService = {
-  getReviews: (propertyId) =>
-    apiGet(API_ENDPOINTS.REVIEWS.LIST(propertyId)),
+  getReviews: function(propertyId) {
+    let url = API_ENDPOINTS.REVIEWS.LIST(propertyId);
+    let result = apiGet(url);
+    return result;
+  },
 
-  createReview: (propertyId, reviewData) =>
-    apiPost(API_ENDPOINTS.REVIEWS.CREATE(propertyId), reviewData),
+  createReview: function(propertyId, reviewData) {
+    let url = API_ENDPOINTS.REVIEWS.CREATE(propertyId);
+    let result = apiPost(url, reviewData);
+    return result;
+  },
 
-  updateReview: (propertyId, reviewId, reviewData) =>
-    apiPut(
-      API_ENDPOINTS.REVIEWS.UPDATE(propertyId, reviewId),
-      reviewData
-    ),
+  updateReview: function(propertyId, reviewId, reviewData) {
+    let url = API_ENDPOINTS.REVIEWS.UPDATE(propertyId, reviewId);
+    let result = apiPut(url, reviewData);
+    return result;
+  },
 
-  deleteReview: (propertyId, reviewId) =>
-    apiDelete(API_ENDPOINTS.REVIEWS.DELETE(propertyId, reviewId)),
+  deleteReview: function(propertyId, reviewId) {
+    let url = API_ENDPOINTS.REVIEWS.DELETE(propertyId, reviewId);
+    let result = apiDelete(url);
+    return result;
+  }
 };
 
 /**
  * Trust Score Service
  */
 export const trustScoreService = {
-  calculateScore: (propertyId, scoreData) =>
-    apiPost(API_ENDPOINTS.TRUST_SCORE.CALCULATE(propertyId), scoreData),
+  calculateScore: function(propertyId, scoreData) {
+    let url = API_ENDPOINTS.TRUST_SCORE.CALCULATE(propertyId);
+    let result = apiPost(url, scoreData);
+    return result;
+  },
 
-  getScore: (propertyId) =>
-    apiGet(API_ENDPOINTS.TRUST_SCORE.GET(propertyId)),
+  getScore: function(propertyId) {
+    let url = API_ENDPOINTS.TRUST_SCORE.GET(propertyId);
+    let result = apiGet(url);
+    return result;
+  }
 };
 
 /**
  * Hazard Analysis Service
  */
 export const hazardService = {
-  analyze: (location) =>
-    apiPost(API_ENDPOINTS.HAZARD.ANALYZE, location),
+  analyze: function(location) {
+    let result = apiPost(API_ENDPOINTS.HAZARD.ANALYZE, location);
+    return result;
+  },
 
-  getHazardData: (propertyId) =>
-    apiGet(API_ENDPOINTS.HAZARD.GET(propertyId)),
+  getHazardData: function(propertyId) {
+    let url = API_ENDPOINTS.HAZARD.GET(propertyId);
+    let result = apiGet(url);
+    return result;
+  },
 
-  getLocationHazards: (lat, lon) =>
-    apiGet(API_ENDPOINTS.HAZARD.LOCATIONS, {
-      params: new URLSearchParams({ lat, lon }),
-    }),
+  getLocationHazards: function(lat, lon) {
+    let paramsData = { lat: lat, lon: lon };
+    let config = {
+      params: new URLSearchParams(paramsData)
+    };
+    let result = apiGet(API_ENDPOINTS.HAZARD.LOCATIONS, config);
+    return result;
+  }
 };
 
 /**
  * Documents Service
  */
 export const documentService = {
-  uploadDocument: (propertyId, file, documentType) => {
-    const formData = new FormData();
+  uploadDocument: function(propertyId, file, documentType) {
+    let formData = new FormData();
     formData.append("file", file);
     formData.append("type", documentType);
     formData.append("propertyId", propertyId);
-    return apiPost(API_ENDPOINTS.DOCUMENTS.UPLOAD, formData);
+    let result = apiPost(API_ENDPOINTS.DOCUMENTS.UPLOAD, formData);
+    return result;
   },
 
-  getDocuments: (propertyId) =>
-    apiGet(API_ENDPOINTS.DOCUMENTS.GET(propertyId)),
+  getDocuments: function(propertyId) {
+    let url = API_ENDPOINTS.DOCUMENTS.GET(propertyId);
+    let result = apiGet(url);
+    return result;
+  },
 
-  deleteDocument: (documentId) =>
-    apiDelete(API_ENDPOINTS.DOCUMENTS.DELETE(documentId)),
+  deleteDocument: function(documentId) {
+    let url = API_ENDPOINTS.DOCUMENTS.DELETE(documentId);
+    let result = apiDelete(url);
+    return result;
+  }
 };
 
 /**
  * Geospatial Service
  */
 export const geospatialService = {
-  getNearby: (lat, lon, radius = 5) =>
-    apiGet(API_ENDPOINTS.GEOSPATIAL.NEARBY, {
-      params: new URLSearchParams({ lat, lon, radius }),
-    }),
+  getNearby: function(lat, lon, radius) {
+    if (radius === undefined) {
+      radius = 5;
+    }
+    let paramsData = { lat: lat, lon: lon, radius: radius };
+    let config = {
+      params: new URLSearchParams(paramsData)
+    };
+    let result = apiGet(API_ENDPOINTS.GEOSPATIAL.NEARBY, config);
+    return result;
+  },
 
-  calculateDistance: (lat1, lon1, lat2, lon2) =>
-    apiGet(API_ENDPOINTS.GEOSPATIAL.DISTANCE, {
-      params: new URLSearchParams({ lat1, lon1, lat2, lon2 }),
-    }),
+  calculateDistance: function(lat1, lon1, lat2, lon2) {
+    let paramsData = { lat1: lat1, lon1: lon1, lat2: lat2, lon2: lon2 };
+    let config = {
+      params: new URLSearchParams(paramsData)
+    };
+    let result = apiGet(API_ENDPOINTS.GEOSPATIAL.DISTANCE, config);
+    return result;
+  },
 
-  getAccessibility: (lat, lon) =>
-    apiGet(API_ENDPOINTS.GEOSPATIAL.ACCESSIBILITY(lat, lon)),
+  getAccessibility: function(lat, lon) {
+    let url = API_ENDPOINTS.GEOSPATIAL.ACCESSIBILITY(lat, lon);
+    let result = apiGet(url);
+    return result;
+  }
 };
 
 /**
  * Users Service
  */
 export const userService = {
-  getProfile: () => apiGet(API_ENDPOINTS.USERS.GET_PROFILE),
+  getProfile: function() {
+    let result = apiGet(API_ENDPOINTS.USERS.GET_PROFILE);
+    return result;
+  },
 
-  updateProfile: (userData) =>
-    apiPut(API_ENDPOINTS.USERS.UPDATE_PROFILE, userData),
+  updateProfile: function(userData) {
+    let result = apiPut(API_ENDPOINTS.USERS.UPDATE_PROFILE, userData);
+    return result;
+  },
 
-  getUserById: (id) => apiGet(API_ENDPOINTS.USERS.GET_BY_ID(id)),
+  getUserById: function(id) {
+    let url = API_ENDPOINTS.USERS.GET_BY_ID(id);
+    let result = apiGet(url);
+    return result;
+  }
 };
 
 /**
  * Ministry Approvals Service
  */
 export const approvalService = {
-  getPendingApprovals: () =>
-    apiGet(API_ENDPOINTS.APPROVALS.PENDING),
+  getPendingApprovals: function() {
+    let result = apiGet(API_ENDPOINTS.APPROVALS.PENDING);
+    return result;
+  },
 
-  approveProperty: (propertyId, adminNotes = "") =>
-    apiPost(API_ENDPOINTS.APPROVALS.APPROVE(propertyId), { adminNotes }),
-
-  rejectProperty: (propertyId, reason = "") =>
-    apiPost(API_ENDPOINTS.APPROVALS.REJECT(propertyId), { reason }),
+  approveProperty: function(propertyId, adminNotes) {
+    if (adminNotes === undefined) {
+      adminNotes = "";
+    }
+    let url = API_ENDPOINTS.APPROVALS.APPROVE(propertyId);
+    let data = { adminNotes: adminNotes };
+    let result = apiPost(url, data);
+    return result;
+  }
 };

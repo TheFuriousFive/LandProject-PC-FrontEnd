@@ -25,6 +25,12 @@ function Header() {
           >
             Services
           </Link>
+          <Link
+            href="/owner"
+            className="font-bold text-white hover:text-[#9afb21] transition"
+          >
+            Dashboard
+          </Link>
         </div>
 
         <div className="flex space-x-3">

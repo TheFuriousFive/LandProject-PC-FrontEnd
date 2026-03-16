@@ -1,7 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Building2, Landmark, Shield } from "lucide-react";
+
+const setAuthCookie = (role, email) => {
+  document.cookie = `currentUser=${JSON.stringify({ role, email })}; path=/; max-age=86400`;
+};
 
 export default function CreateAccountPage() {
   const router = useRouter();
@@ -10,7 +14,7 @@ export default function CreateAccountPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -23,30 +27,25 @@ export default function CreateAccountPage() {
   });
 
   // Watch the role value so we can style the active button accordingly
-  const activeRole = watch("role");
+  const activeRole = useWatch({ control, name: "role" });
 
   // This function runs when the form is successfully submitted
   const onSubmit = (data) => {
     console.log("Data ready to send to database:", data);
 
+    const actualRole = data.role === "admin" ? "ministry" : data.role;
+
+    // Set a cookie manually for the mock authentication
+    setAuthCookie(actualRole, data.email);
+
     // Redirect based on role
     const roleRoutes = {
       investor: "/investor",
       owner: "/owner",
-      admin: "/ministry",
+      ministry: "/ministry",
     };
 
-    // Simulate API call - replace with actual backend call
-    // fetch('/api/auth/register', { method: 'POST', body: JSON.stringify(data) })
-    //   .then(res => res.json())
-    //   .then(result => {
-    //     if (result.success) {
-    //       router.push(roleRoutes[data.role]);
-    //     }
-    //   })
-
-    // For now, redirect immediately
-    router.push(roleRoutes[data.role] || "/investor");
+    router.push(roleRoutes[actualRole] || "/investor");
   };
 
   return (

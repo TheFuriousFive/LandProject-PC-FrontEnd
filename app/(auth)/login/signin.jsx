@@ -1,7 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Shield } from "lucide-react";
+import Link from "next/link";
+
+const setAuthCookie = (role, email) => {
+  document.cookie = `currentUser=${JSON.stringify({ role, email })}; path=/; max-age=86400`;
+};
 
 export default function SignInPage() {
   const router = useRouter();
@@ -10,7 +15,7 @@ export default function SignInPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -21,30 +26,25 @@ export default function SignInPage() {
   });
 
   // Watch the role value for styling the segmented control
-  const activeRole = watch("role");
+  const activeRole = useWatch({ control, name: "role" });
 
   // Handle form submission
   const onSubmit = (data) => {
     console.log("Sign In Data:", data);
 
+    const actualRole = data.role === "admin" ? "ministry" : data.role;
+
+    // Set a cookie manually for the mock authentication
+    setAuthCookie(actualRole, data.email);
+
     // Redirect based on role
     const roleRoutes = {
       investor: "/investor",
       owner: "/owner",
-      admin: "/ministry",
+      ministry: "/ministry",
     };
 
-    // Simulate API call - replace with actual backend call
-    // fetch('/api/auth/signin', { method: 'POST', body: JSON.stringify(data) })
-    //   .then(res => res.json())
-    //   .then(result => {
-    //     if (result.success) {
-    //       router.push(roleRoutes[result.user.role]);
-    //     }
-    //   })
-
-    // For now, redirect based on selected role
-    router.push(roleRoutes[data.role] || "/investor");
+    router.push(roleRoutes[actualRole] || "/investor");
   };
 
   return (
@@ -175,12 +175,12 @@ export default function SignInPage() {
             <p className="text-center text-sm text-gray-600">
               New to TerraVest?{" "}
               {/* If using Next.js routing, swap the <a> tags below for <Link href="/register"> */}
-              <a
+              <Link
                 href="/register"
                 className="font-bold text-gray-900 hover:text-black transition-colors cursor-pointer"
               >
                 Create Account
-              </a>
+              </Link>
             </p>
           </form>
         </div>
