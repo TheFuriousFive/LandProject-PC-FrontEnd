@@ -12,6 +12,7 @@ export function MinistryProvider({ children }) {
     // Initialize mock data if empty
     const savedListings = localStorage.getItem("ministry_listings");
     if (savedListings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setListings(JSON.parse(savedListings));
     } else {
       const initialListings = [
