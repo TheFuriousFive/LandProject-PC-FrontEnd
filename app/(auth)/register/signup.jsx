@@ -26,27 +26,43 @@ export default function CreateAccountPage() {
   const activeRole = watch("role");
 
   // This function runs when the form is successfully submitted
-  const onSubmit = (data) => {
-    console.log("Data ready to send to database:", data);
+  const onSubmit = async (data) => {
+    try {
+      const endpointMap = {
+        investor: "/auth/signup/investor",
+        owner: "/auth/signup/owner",
+      };
 
-    // Redirect based on role
-    const roleRoutes = {
-      investor: "/investor",
-      owner: "/owner",
-      admin: "/ministry",
-    };
+      const endpoint = `${process.env.NEXT_PUBLIC_API_URL}${endpointMap[data.role]}`;
 
-    // Simulate API call - replace with actual backend call
-    // fetch('/api/auth/register', { method: 'POST', body: JSON.stringify(data) })
-    //   .then(res => res.json())
-    //   .then(result => {
-    //     if (result.success) {
-    //       router.push(roleRoutes[data.role]);
-    //     }
-    //   })
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          contactNumber: data.contactNumber,
+          passwordHash: data.password,
+        }),
+      });
 
-    // For now, redirect immediately
-    router.push(roleRoutes[data.role] || "/investor");
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || "Registration failed");
+      }
+
+      console.log("Success:", result);
+
+      alert("Account created successfully!");
+      router.push("/login");
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
   };
 
   return (

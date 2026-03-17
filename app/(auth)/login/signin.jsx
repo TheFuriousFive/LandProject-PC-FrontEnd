@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { Shield } from "lucide-react";
 
@@ -24,27 +25,46 @@ export default function SignInPage() {
   const activeRole = watch("role");
 
   // Handle form submission
-  const onSubmit = (data) => {
-    console.log("Sign In Data:", data);
+  const onSubmit = async (data) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      });
 
-    // Redirect based on role
-    const roleRoutes = {
-      investor: "/investor",
-      owner: "/owner",
-      admin: "/ministry",
-    };
+      const result = await res.json();
+      console.log("STATUS:", res.status);
+      console.log("RESPONSE:", result);
+      if (!res.ok) {
+        throw new Error(result.description || "Login failed");
+      }
 
-    // Simulate API call - replace with actual backend call
-    // fetch('/api/auth/signin', { method: 'POST', body: JSON.stringify(data) })
-    //   .then(res => res.json())
-    //   .then(result => {
-    //     if (result.success) {
-    //       router.push(roleRoutes[result.user.role]);
-    //     }
-    //   })
+      console.log("Login success:", result);
 
-    // For now, redirect based on selected role
-    router.push(roleRoutes[data.role] || "/investor");
+      // ✅ Save token
+      localStorage.setItem("token", result.token);
+
+      // ✅ Save user info (optional but useful)
+      localStorage.setItem("user", JSON.stringify(result));
+
+      // ✅ Redirect based on backend role (NOT frontend role)
+      const roleRoutes = {
+        INVESTOR: "/investor",
+        OWNER: "/owner",
+        ADMIN: "/ministry",
+      };
+
+      router.push(roleRoutes[result.userType] || "/investor");
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    }
   };
 
   return (
@@ -175,12 +195,12 @@ export default function SignInPage() {
             <p className="text-center text-sm text-gray-600">
               New to TerraVest?{" "}
               {/* If using Next.js routing, swap the <a> tags below for <Link href="/register"> */}
-              <a
+              <Link
                 href="/register"
                 className="font-bold text-gray-900 hover:text-black transition-colors cursor-pointer"
               >
                 Create Account
-              </a>
+              </Link>
             </p>
           </form>
         </div>
