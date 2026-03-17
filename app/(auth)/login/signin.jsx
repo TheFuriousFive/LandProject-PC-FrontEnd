@@ -15,7 +15,7 @@ export default function SignInPage() {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      role: "investor", // Default role
+      role: "investor", // Default role is investor
       email: "",
       password: "",
     },
