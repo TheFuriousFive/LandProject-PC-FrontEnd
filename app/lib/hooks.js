@@ -333,3 +333,8 @@ export function useApi(apiFunction) {
 
   return { data, loading, error, execute };
 }
+export function useAuth() {
+  const [user, setUser] = useState({ role: typeof window !== 'undefined' ? localStorage.getItem('userRole') || 'investor' : 'investor' });
+  return { user };
+}
+

@@ -52,6 +52,7 @@ export default function SignInPage() {
 
       // ✅ Save user info (optional but useful)
       localStorage.setItem("user", JSON.stringify(result));
+      localStorage.setItem("userRole", result.userType.toLowerCase());
 
       // ✅ Redirect based on backend role (NOT frontend role)
       const roleRoutes = {

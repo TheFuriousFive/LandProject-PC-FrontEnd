@@ -14,11 +14,11 @@ export default function LocationMap({ latitude, longitude, title }) {
       </div>
 
       {/* Map Container */}
-      <div className="relative mb-4 rounded-xl overflow-hidden bg-gray-100 h-96">
+      <div className="relative mb-4 rounded-xl overflow-hidden bg-gray-50 h-96 border border-gray-200">
         {/* Fallback: Static Map Image */}
-        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
+        <div className="w-full h-full flex items-center justify-center">
           <div className="text-center">
-            <MapPin size={48} className="mx-auto mb-3 text-blue-400" />
+            <MapPin size={48} className="mx-auto mb-3 text-gray-400" />
             <p className="text-gray-600 font-medium mb-4">
               {latitude}, {longitude}
             </p>
@@ -52,7 +52,7 @@ export default function LocationMap({ latitude, longitude, title }) {
       </div>
 
       {/* Location Details */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
         <p className="text-sm text-gray-600">
           <span className="font-bold">Using OpenStreetMap API</span> for
           real-time geospatial data and location validation. Distance

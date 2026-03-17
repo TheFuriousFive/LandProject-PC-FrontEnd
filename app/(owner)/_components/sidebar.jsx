@@ -11,6 +11,8 @@ export default function Sidebar() {
     document.cookie =
       "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("token");
     router.push("/login");
   };
 

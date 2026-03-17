@@ -1,4 +1,4 @@
-import { TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+﻿import { TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
 import TrustScoreCalculator from "./trustScoreCalculator";
 
 export default function TrustScoreDisplay({ listingData }) {
@@ -9,11 +9,11 @@ export default function TrustScoreDisplay({ listingData }) {
 
   // Determine color based on score
   const getScoreColor = (s) => {
-    if (s >= 85) return "bg-green-100 text-green-700 border-green-300";
-    if (s >= 70) return "bg-blue-100 text-blue-700 border-blue-300";
-    if (s >= 55) return "bg-yellow-100 text-yellow-700 border-yellow-300";
-    if (s >= 40) return "bg-orange-100 text-orange-700 border-orange-300";
-    return "bg-red-100 text-red-700 border-red-300";
+    if (s >= 85) return "text-green-700";
+    if (s >= 70) return "text-blue-700";
+    if (s >= 55) return "text-yellow-700";
+    if (s >= 40) return "text-orange-700";
+    return "text-red-700";
   };
 
   const getScoreIcon = (s) => {
@@ -23,7 +23,7 @@ export default function TrustScoreDisplay({ listingData }) {
   };
 
   return (
-    <div className={`border-2 rounded-2xl p-6 ${getScoreColor(score)}`}>
+    <div className="bg-white border border-gray-200 rounded-2xl p-6 text-gray-900">
       {/* Header with Icon and Score */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -34,14 +34,14 @@ export default function TrustScoreDisplay({ listingData }) {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-lg font-bold">{level}</p>
+          <p className={`text-lg font-bold ${getScoreColor(score)}`}>{level}</p>
           <p className="text-xs opacity-75 max-w-xs">{description}</p>
         </div>
       </div>
 
       {/* Progress Bar */}
       <div className="mb-4">
-        <div className="relative h-3 bg-black/10 rounded-full overflow-hidden">
+        <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 transition-all duration-500"
             style={{ width: `${score}%` }}
@@ -50,19 +50,19 @@ export default function TrustScoreDisplay({ listingData }) {
       </div>
 
       {/* Recommendation */}
-      <div className="bg-black/5 rounded-lg p-3 mb-4">
+      <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 mb-4">
         <p className="text-sm font-semibold">{recommendation}</p>
       </div>
 
       {/* Score Breakdown */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-black/5 rounded-lg p-3">
+        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
           <p className="text-xs font-bold opacity-75 mb-1">Documentation</p>
           <p className="text-lg font-bold">
             {scoreBreakdown.details.documentation}
           </p>
         </div>
-        <div className="bg-black/5 rounded-lg p-3">
+        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
           <p className="text-xs font-bold opacity-75 mb-1">
             Owner Verification
           </p>
@@ -70,13 +70,13 @@ export default function TrustScoreDisplay({ listingData }) {
             {scoreBreakdown.details.ownerVerification}
           </p>
         </div>
-        <div className="bg-black/5 rounded-lg p-3">
+        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
           <p className="text-xs font-bold opacity-75 mb-1">Peer Reviews</p>
           <p className="text-lg font-bold">
             {scoreBreakdown.details.peerReviews}
           </p>
         </div>
-        <div className="bg-black/5 rounded-lg p-3">
+        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
           <p className="text-xs font-bold opacity-75 mb-1">
             Government Approval
           </p>
