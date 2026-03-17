@@ -1,152 +1,109 @@
+export const metadata = {
+  title: "Investor Dashboard | LandProject",
+  description: "View your investor activity, key stats, and recent listings.",
+};
+
+import { Compass, FileText, Heart, MapPin, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { Search, MapPin, Ruler, DollarSign } from "lucide-react";
 
 export default function InvestorDashboard() {
-  const availableLands = [
-    {
-      id: 1,
-      title: "Premium Agricultural Land",
-      location: "Iowa",
-      acres: 320,
-      price: "$1.2M",
-      zoning: "Agricultural",
-      status: "Verified",
-      imageUrl:
-        "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800&auto=format&fit=crop",
-    },
-    {
-      id: 2,
-      title: "Development Ready Plot",
-      location: "Texas",
-      acres: 85,
-      price: "$850K",
-      zoning: "Mixed Use",
-      status: "Verified",
-      imageUrl:
-        "https://images.unsplash.com/photo-1492617519907-e0f71f7c76fc?q=80&w=800&auto=format&fit=crop",
-    },
-  ];
-
   return (
-    <main className="p-8 md:p-12 max-w-7xl mx-auto">
-      {/* Header Section */}
-      <div className="mb-12">
-        <h1 className="text-4xl font-extrabold tracking-tight mb-2">
-          Find Your Investment
-        </h1>
-        <p className="text-gray-500 font-medium text-lg">
-          Browse verified land listings from verified sellers across the
-          country.
-        </p>
-      </div>
-
-      {/* Search and Filter Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-        <div className="md:col-span-2">
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-3.5 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search location, property type..."
-              className="w-full bg-white border border-gray-200 text-gray-900 text-sm rounded-lg pl-10 pr-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors"
-            />
-          </div>
+    <div className="p-8 md:p-12 max-w-7xl mx-auto">
+      <div className="flex justify-between items-end mb-12">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight mb-2">
+            Welcome back, Investor
+          </h1>
+          <p className="text-gray-500 font-medium text-lg">
+            Here&apos;s an overview of your real estate investment portfolio.
+          </p>
         </div>
-
-        <select className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg px-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors">
-          <option>All Zoning Types</option>
-          <option>Agricultural</option>
-          <option>Residential</option>
-          <option>Commercial</option>
-          <option>Mixed Use</option>
-        </select>
-
-        <select className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg px-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors">
-          <option>Price: Any</option>
-          <option>Under $500K</option>
-          <option>$500K - $1M</option>
-          <option>$1M - $5M</option>
-          <option>$5M+</option>
-        </select>
+        <Link
+          href="/investor/browse"
+          className="bg-[#0f0f11] text-[#9afb21] px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-black transition-colors"
+        >
+          <Compass size={20} />
+          Explore Lands
+        </Link>
       </div>
 
-      {/* Listing Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {availableLands.map((land) => (
-          <Link
-            key={land.id}
-            href={`/property/${land.id}`}
-            className="group block"
-          >
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
-              {/* Image */}
-              <div className="h-64 bg-gray-200 overflow-hidden">
-                <img
-                  src={land.imageUrl}
-                  alt={land.title}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+          <div className="flex items-center gap-3 text-gray-500 mb-4">
+            <Heart size={20} />
+            <p className="font-semibold">Saved Listings</p>
+          </div>
+          <p className="text-4xl font-bold text-gray-900">12</p>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+          <div className="flex items-center gap-3 text-gray-500 mb-4">
+            <TrendingUp size={20} />
+            <p className="font-semibold">Active Offers</p>
+          </div>
+          <p className="text-4xl font-bold text-gray-900">2</p>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+          <div className="flex items-center gap-3 text-gray-500 mb-4">
+            <FileText size={20} />
+            <p className="font-semibold">Contracts</p>
+          </div>
+          <p className="text-4xl font-bold text-gray-900">0</p>
+        </div>
+        <div className="bg-[#9afb21] p-6 rounded-2xl shadow-sm border border-[#8bed1c] flex flex-col justify-between">
+          <div className="flex items-center gap-3 text-[#0f0f11] mb-4">
+            <MapPin size={20} />
+            <p className="font-semibold">Avg. Price / Acre</p>
+          </div>
+          <p className="text-4xl font-bold text-[#0f0f11]">$4,250</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          Recent Activity
+        </h2>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center space-x-4 mb-4 sm:mb-0">
+                <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden shrink-0">
+                  <img
+                    src={`https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=200&auto=format&fit=crop&${i}`}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg">
+                    Premium Agriculture Land {i}
+                  </h3>
+                  <p className="text-sm text-gray-500 font-medium">
+                    Des Moines, Iowa • 120 Acres
+                  </p>
+                </div>
               </div>
-
-              {/* Content */}
-              <div className="p-6">
-                {/* Title and Status */}
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-[#9afb21] transition-colors">
-                      {land.title}
-                    </h3>
-                    <div className="flex items-center text-gray-500 text-sm gap-1">
-                      <MapPin size={16} />
-                      {land.location}
-                    </div>
-                  </div>
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-                    {land.status}
-                  </span>
+              <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                <div className="text-left sm:text-right">
+                  <p className="font-bold text-gray-900 text-lg">$240,000</p>
+                  <p className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block mt-1">
+                    Under Review
+                  </p>
                 </div>
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-3 gap-4 mb-6 py-4 border-t border-b border-gray-100">
-                  <div>
-                    <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                      <Ruler size={14} />
-                      Acres
-                    </div>
-                    <p className="font-bold text-gray-900">{land.acres}</p>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                      <DollarSign size={14} />
-                      Price
-                    </div>
-                    <p className="font-bold text-gray-900">{land.price}</p>
-                  </div>
-                  <div>
-                    <div className="text-gray-500 text-xs mb-1">Zoning</div>
-                    <p className="font-bold text-gray-900 text-sm">
-                      {land.zoning}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3">
-                  <button className="flex-1 bg-[#9afb21] text-black hover:bg-[#8aec1b] font-bold py-2.5 rounded-lg transition-colors">
-                    View Details
-                  </button>
-                  <button className="flex-1 border border-[#9afb21] text-[#9afb21] hover:bg-[#9afb21]/5 font-bold py-2.5 rounded-lg transition-colors">
-                    Contact Owner
-                  </button>
-                </div>
+                <Link
+                  href={`/property/${i}`}
+                  className="bg-white border border-gray-200 text-sm font-bold px-4 py-2 rounded-lg hover:border-gray-900 transition-colors"
+                >
+                  View Details
+                </Link>
               </div>
             </div>
-          </Link>
-        ))}
+          ))}
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

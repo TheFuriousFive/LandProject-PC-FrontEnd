@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   CheckCircle,
@@ -10,6 +12,29 @@ import {
 } from "lucide-react";
 
 export default function MinistrySidebar() {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    document.cookie =
+      "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
+
+  const navItems = [
+    { name: "Dashboard", href: "/ministry", icon: Home },
+    { name: "Pending Approvals", href: "/ministry/approvals", icon: Clock },
+    {
+      name: "Approved Listings",
+      href: "/ministry/approved",
+      icon: CheckCircle,
+    },
+    { name: "Analytics", href: "/ministry/analytics", icon: BarChart3 },
+    { name: "User Management", href: "/ministry/users", icon: Users },
+    { name: "Settings", href: "/ministry/settings", icon: Settings },
+  ];
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col pt-8 px-4 flex-shrink-0">
       <div className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-6 px-2">
@@ -17,63 +42,31 @@ export default function MinistrySidebar() {
       </div>
 
       <nav className="space-y-2 flex-1">
-        {/* Dashboard */}
-        <Link
-          href="/ministry"
-          className="flex items-center space-x-3 bg-[#0f0f11] text-[#9afb21] px-4 py-3 rounded-xl font-semibold hover:bg-black transition-all"
-        >
-          <Home size={20} />
-          <span className="text-sm">Dashboard</span>
-        </Link>
-
-        {/* Pending Approvals */}
-        <Link
-          href="/ministry/approvals"
-          className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-xl font-semibold transition-all"
-        >
-          <Clock size={20} />
-          <span className="text-sm">Pending Approvals</span>
-        </Link>
-
-        {/* Approved Listings */}
-        <Link
-          href="/ministry/approved"
-          className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-xl font-semibold transition-all"
-        >
-          <CheckCircle size={20} />
-          <span className="text-sm">Approved Listings</span>
-        </Link>
-
-        {/* Analytics */}
-        <Link
-          href="/ministry/analytics"
-          className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-xl font-semibold transition-all"
-        >
-          <BarChart3 size={20} />
-          <span className="text-sm">Analytics</span>
-        </Link>
-
-        {/* User Management */}
-        <Link
-          href="/ministry/users"
-          className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-xl font-semibold transition-all"
-        >
-          <Users size={20} />
-          <span className="text-sm">User Management</span>
-        </Link>
-
-        {/* Settings */}
-        <Link
-          href="/ministry/settings"
-          className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-3 rounded-xl font-semibold transition-all"
-        >
-          <Settings size={20} />
-          <span className="text-sm">Settings</span>
-        </Link>
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-all ${
+                isActive
+                  ? "bg-[#0f0f11] text-[#9afb21]"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              <Icon size={20} />
+              <span className="text-sm">{item.name}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Logout Button */}
-      <button className="w-full flex items-center space-x-3 text-red-600 hover:bg-red-50 px-4 py-3 rounded-xl font-semibold transition-all mb-4">
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center space-x-3 text-red-600 hover:bg-red-50 px-4 py-3 rounded-xl font-semibold transition-all mb-4"
+      >
         <LogOut size={20} />
         <span className="text-sm">Logout</span>
       </button>
