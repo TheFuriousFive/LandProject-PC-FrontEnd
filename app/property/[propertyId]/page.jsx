@@ -16,10 +16,14 @@ import HazardOverlay from "@/_modules/hazardData/HazardOverlay";
 import TrustScoreDisplay from "@/_modules/trustScore/TrustScoreDisplay";
 import ReviewSection from "@/_shared/ReviewSection";
 import GeoUtils from "@/_modules/geospatial/mapUtils";
+import PropertyPageHeader from "@/_modules/property/PropertyPageHeader";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/hooks";
 
 export default function PropertyDetailsPage() {
   const params = useParams();
-
+  const { user } = useAuth();
+  console.log(user, "userrrrrrrrrrrrrrrrr");
   // Mock property data - replace with API call
   const property = {
     id: params.propertyId || "1",
@@ -27,10 +31,10 @@ export default function PropertyDetailsPage() {
     location: "Kandy, Sri Lanka",
     latitude: 7.2906,
     longitude: 80.6337,
-    acres: 50,
+    area: 50,
     price: 1200000,
     currency: "USD",
-    zoning: "Agricultural",
+    landType: "Agricultural",
     surveyNumber: "SL-2024-12345",
     status: "approved",
     description:
@@ -132,6 +136,8 @@ export default function PropertyDetailsPage() {
   return (
     <main className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
+        <PropertyPageHeader role={user.role} property={property} />
+
         {/* Header with Images */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Main Image */}
@@ -179,7 +185,7 @@ export default function PropertyDetailsPage() {
                 <Ruler size={20} className="text-gray-400" />
                 <div>
                   <p className="text-xs text-gray-500">Area</p>
-                  <p className="font-bold">{property.acres} Acres</p>
+                  <p className="font-bold">{property.area} Acres</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -317,7 +323,7 @@ export default function PropertyDetailsPage() {
             </div>
 
             {/* Documents Section */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200">
+            {/* <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <h3 className="text-lg font-bold text-gray-900 mb-4">
                 Documentation
               </h3>
@@ -339,7 +345,7 @@ export default function PropertyDetailsPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Reviews */}
             <ReviewSection
@@ -424,3 +430,4 @@ export default function PropertyDetailsPage() {
     </main>
   );
 }
+

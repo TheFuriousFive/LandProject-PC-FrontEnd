@@ -14,11 +14,11 @@ export default function HazardOverlay({ hazardData }) {
   const analysis = HazardAnalyzer.getHazardInsights(hazardData);
 
   const getRiskColor = (risk) => {
-    if (risk <= 10) return "bg-green-100 text-green-700 border-green-300";
-    if (risk <= 25) return "bg-blue-100 text-blue-700 border-blue-300";
-    if (risk <= 40) return "bg-yellow-100 text-yellow-700 border-yellow-300";
-    if (risk <= 60) return "bg-orange-100 text-orange-700 border-orange-300";
-    return "bg-red-100 text-red-700 border-red-300";
+    if (risk <= 10) return "bg-white text-gray-900 border-gray-200";
+    if (risk <= 25) return "bg-white text-gray-900 border-gray-200";
+    if (risk <= 40) return "bg-white text-gray-900 border-gray-200";
+    if (risk <= 60) return "bg-white text-gray-900 border-gray-200";
+    return "bg-white text-gray-900 border-gray-200";
   };
 
   const hazards = [
@@ -55,9 +55,10 @@ export default function HazardOverlay({ hazardData }) {
   ];
 
   return (
-    <div
-      className={`border-2 rounded-2xl p-6 ${getRiskColor(analysis.totalRisk)}`}
-    >
+    <div className="bg-white border border-gray-200 rounded-2xl p-6">
+      {/* <div
+        className={`border-2 rounded-2xl p-6 `}
+      > */}
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <AlertTriangle size={28} />
@@ -68,14 +69,14 @@ export default function HazardOverlay({ hazardData }) {
       </div>
 
       {/* Risk Score */}
-      <div className="mb-4 bg-black/10 rounded-lg p-4">
+      <div className="mb-4 bg-gray-50 border border-gray-100 rounded-lg p-4">
         <div className="flex justify-between items-center mb-2">
           <span className="font-bold">Risk Score</span>
           <span className="text-2xl font-extrabold">
             {analysis.totalRisk}/100
           </span>
         </div>
-        <div className="relative h-3 bg-black/20 rounded-full overflow-hidden">
+        <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 transition-all"
             style={{ width: `${analysis.totalRisk}%` }}
@@ -85,7 +86,7 @@ export default function HazardOverlay({ hazardData }) {
       </div>
 
       {/* Recommendation */}
-      <div className="bg-black/10 rounded-lg p-3 mb-4">
+      <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 mb-4">
         <p className="text-sm font-bold">{analysis.recommendation}</p>
       </div>
 
@@ -94,7 +95,10 @@ export default function HazardOverlay({ hazardData }) {
         {hazards.map((hazard, idx) => {
           const Icon = hazard.icon;
           return (
-            <div key={idx} className="bg-black/10 rounded-lg p-4 text-center">
+            <div
+              key={idx}
+              className="bg-gray-50 border border-gray-100 rounded-lg p-4 text-center"
+            >
               <Icon size={24} className={`mx-auto mb-2 ${hazard.color}`} />
               <p className="text-xs font-bold opacity-75 mb-1">
                 {hazard.label}
@@ -107,7 +111,7 @@ export default function HazardOverlay({ hazardData }) {
 
       {/* Soil Quality */}
       {hazardData.soilQuality && (
-        <div className="mt-4 bg-black/10 rounded-lg p-4">
+        <div className="mt-4 bg-gray-50 border border-gray-100 rounded-lg p-4">
           <p className="text-xs font-bold opacity-75 mb-2">Soil Quality</p>
           <p className="font-bold capitalize">{hazardData.soilQuality}</p>
         </div>

@@ -22,7 +22,9 @@ export const authService = {
  */
 export const propertyService = {
   listProperties: (filters = {}) =>
-    apiGet(API_ENDPOINTS.PROPERTIES.LIST, { params: new URLSearchParams(filters) }),
+    apiGet(API_ENDPOINTS.PROPERTIES.LIST, {
+      params: new URLSearchParams(filters),
+    }),
 
   getProperty: (id) => apiGet(API_ENDPOINTS.PROPERTIES.GET_ONE(id)),
 
@@ -47,17 +49,13 @@ export const propertyService = {
  * Reviews Service
  */
 export const reviewService = {
-  getReviews: (propertyId) =>
-    apiGet(API_ENDPOINTS.REVIEWS.LIST(propertyId)),
+  getReviews: (propertyId) => apiGet(API_ENDPOINTS.REVIEWS.LIST(propertyId)),
 
   createReview: (propertyId, reviewData) =>
     apiPost(API_ENDPOINTS.REVIEWS.CREATE(propertyId), reviewData),
 
   updateReview: (propertyId, reviewId, reviewData) =>
-    apiPut(
-      API_ENDPOINTS.REVIEWS.UPDATE(propertyId, reviewId),
-      reviewData
-    ),
+    apiPut(API_ENDPOINTS.REVIEWS.UPDATE(propertyId, reviewId), reviewData),
 
   deleteReview: (propertyId, reviewId) =>
     apiDelete(API_ENDPOINTS.REVIEWS.DELETE(propertyId, reviewId)),
@@ -70,19 +68,16 @@ export const trustScoreService = {
   calculateScore: (propertyId, scoreData) =>
     apiPost(API_ENDPOINTS.TRUST_SCORE.CALCULATE(propertyId), scoreData),
 
-  getScore: (propertyId) =>
-    apiGet(API_ENDPOINTS.TRUST_SCORE.GET(propertyId)),
+  getScore: (propertyId) => apiGet(API_ENDPOINTS.TRUST_SCORE.GET(propertyId)),
 };
 
 /**
  * Hazard Analysis Service
  */
 export const hazardService = {
-  analyze: (location) =>
-    apiPost(API_ENDPOINTS.HAZARD.ANALYZE, location),
+  analyze: (location) => apiPost(API_ENDPOINTS.HAZARD.ANALYZE, location),
 
-  getHazardData: (propertyId) =>
-    apiGet(API_ENDPOINTS.HAZARD.GET(propertyId)),
+  getHazardData: (propertyId) => apiGet(API_ENDPOINTS.HAZARD.GET(propertyId)),
 
   getLocationHazards: (lat, lon) =>
     apiGet(API_ENDPOINTS.HAZARD.LOCATIONS, {
@@ -102,8 +97,7 @@ export const documentService = {
     return apiPost(API_ENDPOINTS.DOCUMENTS.UPLOAD, formData);
   },
 
-  getDocuments: (propertyId) =>
-    apiGet(API_ENDPOINTS.DOCUMENTS.GET(propertyId)),
+  getDocuments: (propertyId) => apiGet(API_ENDPOINTS.DOCUMENTS.GET(propertyId)),
 
   deleteDocument: (documentId) =>
     apiDelete(API_ENDPOINTS.DOCUMENTS.DELETE(documentId)),
@@ -143,8 +137,7 @@ export const userService = {
  * Ministry Approvals Service
  */
 export const approvalService = {
-  getPendingApprovals: () =>
-    apiGet(API_ENDPOINTS.APPROVALS.PENDING),
+  getPendingApprovals: () => apiGet(API_ENDPOINTS.APPROVALS.PENDING),
 
   approveProperty: (propertyId, adminNotes = "") =>
     apiPost(API_ENDPOINTS.APPROVALS.APPROVE(propertyId), { adminNotes }),
@@ -152,3 +145,28 @@ export const approvalService = {
   rejectProperty: (propertyId, reason = "") =>
     apiPost(API_ENDPOINTS.APPROVALS.REJECT(propertyId), { reason }),
 };
+
+// services/ownerService.js
+
+export async function createLandListing(formData) {
+  const token = localStorage.getItem("token"); // or however you store your JWT
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/landapp/owners/listings`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(formData),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Failed to create listing");
+  }
+
+  return await response.text(); // backend returns a plain string, not JSON
+}
