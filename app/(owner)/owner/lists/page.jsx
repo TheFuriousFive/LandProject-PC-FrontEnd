@@ -19,29 +19,13 @@ export default function MyAds() {
 
   const fetchListings = async () => {
     try {
-      const token = localStorage.getItem("token") || "";
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/landapp/owners/listings`, {
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch listings");
-      }
-
-      const data = await response.json();
-      console.log(data, "data");
-      setListings(data);
+      // Mock data from localStorage (Backend not connected)
+      const storedListings = JSON.parse(
+        localStorage.getItem("land_listings") || "[]",
+      );
+      setListings(storedListings);
     } catch (err) {
-      console.error("Error fetching owners listings:", err);
+      console.error("Error fetching listings:", err);
     } finally {
       setLoading(false);
     }
@@ -60,22 +44,23 @@ export default function MyAds() {
     if (!listingToDelete) return;
 
     try {
-      const token = localStorage.getItem("token") || "";
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const res = await fetch(
-        `${apiUrl}/landapp/owners/listings/${listingToDelete}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        },
+      // Mock delete from localStorage (Backend not connected)
+      const updatedListings = listings.filter((l) => l.id !== listingToDelete);
+      localStorage.setItem(
+        "land_listings",
+        JSON.stringify(updatedListings),
       );
+      setListings(updatedListings);
 
-      if (!res.ok) throw new Error("API delete failed");
-
-      // Update local state (optimistic)
-      setListings(listings.filter((l) => l.id !== listingToDelete));
+      // Add to logs
+      const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
+      logs.unshift({
+        id: Date.now(),
+        action: "Deleted listing",
+        target: listings.find((l) => l.id === listingToDelete)?.title,
+        date: new Date().toISOString(),
+      });
+      localStorage.setItem("owner_logs", JSON.stringify(logs));
 
       setDeleteModalOpen(false);
       setListingToDelete(null);

@@ -31,33 +31,53 @@ export default function LandForm({
     console.log(formData);
     setApiError(null);
     try {
-      const data = {
-        ...formData,
-        price: parseFloat(formData.price),
-        area: parseFloat(formData.area),
-      };
-
-      const token = localStorage.getItem("token");
-
-      const url =
-        mode === "edit"
-          ? `/landapp/owners/listings/${initialData.id}`
-          : "/landapp/owners/listings";
-      const method = mode === "edit" ? "PUT" : "POST";
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${url}`, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Failed to save listing");
+      // Mock submission using localStorage (Backend not connected)
+      if (mode === "create") {
+        const existingListings = JSON.parse(
+          localStorage.getItem("land_listings") || "[]",
+        );
+        const newListing = {
+          ...formData,
+          id: "land_" + Date.now(),
+          status: "pending",
+          ownerId: "owner1",
+          createdAt: new Date().toISOString(),
+          price: parseFloat(formData.price),
+          area: parseFloat(formData.area),
+        };
+        localStorage.setItem(
+          "land_listings",
+          JSON.stringify([newListing, ...existingListings]),
+        );
+      } else if (mode === "edit") {
+        const existingListings = JSON.parse(
+          localStorage.getItem("land_listings") || "[]",
+        );
+        const updatedListings = existingListings.map((listing) =>
+          listing.id === initialData.id
+            ? {
+                ...listing,
+                ...formData,
+                price: parseFloat(formData.price),
+                area: parseFloat(formData.area),
+              }
+            : listing,
+        );
+        localStorage.setItem(
+          "land_listings",
+          JSON.stringify(updatedListings),
+        );
       }
+
+      // Add to logs
+      const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
+      logs.unshift({
+        id: Date.now(),
+        action: mode === "create" ? "Created new listing" : "Updated listing",
+        target: formData.title,
+        date: new Date().toISOString(),
+      });
+      localStorage.setItem("owner_logs", JSON.stringify(logs));
 
       if (onSubmitSuccess) {
         onSubmitSuccess();
