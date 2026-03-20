@@ -29,7 +29,6 @@ export default function MyAds() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      ////////////////me api endpoint eka waradi mokada backend eke me api endpoint aka thiyenne post method ekk widiyt apit data yawanna database ekt
       const response = await fetch(`${apiUrl}/landapp/owners/listings`, {
         headers,
       });
@@ -42,7 +41,7 @@ export default function MyAds() {
       console.log(data, "data");
       setListings(data);
     } catch (err) {
-      console.error("Error fetching owners listings:", err);
+      console.error("Error fetching listings:", err);
     } finally {
       setLoading(false);
     }
@@ -61,22 +60,20 @@ export default function MyAds() {
     if (!listingToDelete) return;
 
     try {
-      const token = localStorage.getItem("token") || "";
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const res = await fetch(
-        `${apiUrl}/landapp/owners/listings/${listingToDelete}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        },
-      );
+      // Mock delete from localStorage (Backend not connected)
+      const updatedListings = listings.filter((l) => l.id !== listingToDelete);
+      localStorage.setItem("land_listings", JSON.stringify(updatedListings));
+      setListings(updatedListings);
 
-      if (!res.ok) throw new Error("API delete failed");
-
-      // Update local state (optimistic)
-      setListings(listings.filter((l) => l.id !== listingToDelete));
+      // Add to logs
+      const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
+      logs.unshift({
+        id: Date.now(),
+        action: "Deleted listing",
+        target: listings.find((l) => l.id === listingToDelete)?.title,
+        date: new Date().toISOString(),
+      });
+      localStorage.setItem("owner_logs", JSON.stringify(logs));
 
       setDeleteModalOpen(false);
       setListingToDelete(null);

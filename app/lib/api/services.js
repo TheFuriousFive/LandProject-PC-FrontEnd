@@ -146,6 +146,46 @@ export const approvalService = {
     apiPost(API_ENDPOINTS.APPROVALS.REJECT(propertyId), { reason }),
 };
 
+/**
+ * Appointments Service
+ */
+export const appointmentService = {
+  getOwnerInbox: () => apiGet(API_ENDPOINTS.APPOINTMENTS.GET_OWNER_INBOX),
+
+  getInvestorResponses: (filters = {}) =>
+    apiGet(API_ENDPOINTS.APPOINTMENTS.GET_INVESTOR_RESPONSES, {
+      params: new URLSearchParams(filters),
+    }),
+
+  getAllAppointments: (filters = {}) =>
+    apiGet(API_ENDPOINTS.APPOINTMENTS.LIST, {
+      params: new URLSearchParams(filters),
+    }),
+
+  getAppointment: (id) => apiGet(API_ENDPOINTS.APPOINTMENTS.GET_ONE(id)),
+
+  createAppointment: (appointmentData) =>
+    apiPost(API_ENDPOINTS.APPOINTMENTS.CREATE, appointmentData),
+
+  acceptAppointment: (id, notes = "") =>
+    apiPost(API_ENDPOINTS.APPOINTMENTS.ACCEPT(id), { notes }),
+
+  rejectAppointment: (id, reason = "") =>
+    apiPost(API_ENDPOINTS.APPOINTMENTS.REJECT(id), { reason }),
+
+  rescheduleAppointment: (id, newDateTime, reason = "") =>
+    apiPost(API_ENDPOINTS.APPOINTMENTS.RESCHEDULE(id), {
+      newDateTime,
+      reason,
+    }),
+
+  requestReschedule: (id, rescheduleData) =>
+    apiPost(API_ENDPOINTS.APPOINTMENTS.REQUEST_RESCHEDULE(id), rescheduleData),
+
+  cancelAppointment: (id, reason = "") =>
+    apiPost(API_ENDPOINTS.APPOINTMENTS.CANCEL(id), { reason }),
+};
+
 // services/ownerService.js
 
 export async function createLandListing(formData) {
