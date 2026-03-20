@@ -76,6 +76,31 @@ function Header() {
           </Link>
         </div>
       </nav>
+
+      {/* TEMPORARY Navigation Buttons for Testing (Backend Not Connected) */}
+      <div className="bg-gray-900 border-t border-gray-700 px-12 py-3">
+        <div className="max-w-[1920px] mx-auto flex items-center justify-center gap-3">
+          <span className="text-xs text-gray-500 font-semibold">TEMP ROUTES:</span>
+          <Link
+            href="/investor"
+            className="text-xs px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition font-medium"
+          >
+            Investor
+          </Link>
+          <Link
+            href="/owner"
+            className="text-xs px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition font-medium"
+          >
+            Owner
+          </Link>
+          <Link
+            href="/ministry"
+            className="text-xs px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition font-medium"
+          >
+            Ministry/Admin
+          </Link>
+        </div>
+      </div>
     </header>
   );
 }

@@ -1,10 +1,10 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import { Clock, X, Edit2, Trash2 } from "lucide-react";
 
 export default function ListingCard({
   title,
   location,
-  acres,
+  area,
   status,
   imageUrl,
 }) {
@@ -45,7 +45,7 @@ export default function ListingCard({
             </div>
           </div>
           <p className="text-gray-500 text-sm font-medium">
-            {location} • {acres} Acres
+            {location} • {area} Acres
           </p>
         </div>
 
@@ -68,3 +68,5 @@ export default function ListingCard({
     </div>
   );
 }
+
+

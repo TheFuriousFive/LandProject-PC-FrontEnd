@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Grid2X2, Plus, Clock, LogOut } from "lucide-react";
+import { Grid2X2, Plus, Clock, LogOut, User } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -11,6 +11,8 @@ export default function Sidebar() {
     document.cookie =
       "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("token");
     router.push("/login");
   };
 
@@ -18,6 +20,7 @@ export default function Sidebar() {
     { name: "My Ads", href: "/owner/lists", icon: Grid2X2 },
     { name: "Add New Land", href: "/owner/add-land", icon: Plus },
     { name: "Activity Logs", href: "/owner/logs", icon: Clock },
+    { name: "My Profile", href: "/owner/profile", icon: User },
   ];
 
   return (
