@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, CheckCircle } from "lucide-react";
 import dynamic from "next/dynamic";
+import ImageUploader from "../../_components/ImageUploader";
 
 // Dynamically import MDEditor to avoid SSR issues
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
@@ -27,6 +28,7 @@ export default function AddNewLand() {
     zoning: "Agricultural",
     description: "",
     keywords: [],
+    images: [],
     documents: [
       { file: null, description: "" },
       { file: null, description: "" },
@@ -38,11 +40,36 @@ export default function AddNewLand() {
 
   // Predefined keywords for land listings
   const predefinedKeywords = [
-    "Agricultural", "Residential", "Commercial", "Industrial", "Forest", "Waterfront",
-    "Mountain View", "City View", "Highway Access", "Airport Nearby", "School District",
-    "Hospital Nearby", "Shopping Center", "Public Transport", "Irrigation", "Fertile Soil",
-    "Organic Farm", "Vineyard", "Orchard", "Livestock", "Fishing", "Hiking", "Recreational",
-    "Investment", "Development", "Conservation", "Historic", "Modern", "Luxury", "Budget"
+    "Agricultural",
+    "Residential",
+    "Commercial",
+    "Industrial",
+    "Forest",
+    "Waterfront",
+    "Mountain View",
+    "City View",
+    "Highway Access",
+    "Airport Nearby",
+    "School District",
+    "Hospital Nearby",
+    "Shopping Center",
+    "Public Transport",
+    "Irrigation",
+    "Fertile Soil",
+    "Organic Farm",
+    "Vineyard",
+    "Orchard",
+    "Livestock",
+    "Fishing",
+    "Hiking",
+    "Recreational",
+    "Investment",
+    "Development",
+    "Conservation",
+    "Historic",
+    "Modern",
+    "Luxury",
+    "Budget",
   ];
 
   // Handle adding keywords
@@ -50,7 +77,7 @@ export default function AddNewLand() {
     if (keyword && !formData.keywords.includes(keyword)) {
       setFormData({
         ...formData,
-        keywords: [...formData.keywords, keyword]
+        keywords: [...formData.keywords, keyword],
       });
     }
     setKeywordInput("");
@@ -60,7 +87,9 @@ export default function AddNewLand() {
   const removeKeyword = (keywordToRemove) => {
     setFormData({
       ...formData,
-      keywords: formData.keywords.filter(keyword => keyword !== keywordToRemove)
+      keywords: formData.keywords.filter(
+        (keyword) => keyword !== keywordToRemove,
+      ),
     });
   };
 
@@ -75,7 +104,7 @@ export default function AddNewLand() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Validate location
@@ -97,40 +126,108 @@ export default function AddNewLand() {
     }
 
     // Validate that at least one document is uploaded
-    const hasDocument = formData.documents.some(doc => doc.file !== null);
+    const hasDocument = formData.documents.some((doc) => !!doc.file);
     if (!hasDocument) {
-      alert("Please upload at least one essential document for ministry verification.");
+      alert(
+        "Please upload at least one essential document for ministry verification.",
+      );
       return;
     }
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      // Mock Saving to DB via LocalStorage
-      const existingListings = JSON.parse(
-        localStorage.getItem("land_listings") || "[]",
-      );
+    try {
+      let token = "";
+      let ownerId = null;
+      if (typeof window !== "undefined") {
+        const rawToken = localStorage.getItem("token") || "";
+        token = rawToken.replace(/^"|"$/g, "").trim(); // Strips accidental quotes or whitespace
+        let userStr = localStorage.getItem("user");
+
+        // Strip out wrapper quotes if the user object was doubly-stringified
+        if (userStr && userStr.startsWith('"') && userStr.endsWith('"')) {
+          userStr = JSON.parse(userStr);
+        }
+
+        const loggedInUser = userStr ? JSON.parse(userStr) : null;
+        console.log("LOGGED IN USER:", loggedInUser);
+        ownerId =
+          loggedInUser?.id ||
+          loggedInUser?.userId ||
+          loggedInUser?.ownerId ||
+          loggedInUser?.user?.id ||
+          loggedInUser?.user?.Id ||
+          null;
+
+        if (!ownerId) {
+          console.error("Owner ID could not be extracted from:", loggedInUser);
+        }
+      }
 
       const newListing = {
-        ...formData,
-        id: "land_" + Date.now(),
+        title: formData.title,
+        description: formData.description,
+        location: `${formData.location.city}, ${formData.location.state}`,
         status: "pending",
-        ownerId: "owner1",
-        createdAt: new Date().toISOString(),
-        location: formData.location,
-        size: formData.size,
-        keywords: formData.keywords,
-        documents: formData.documents.map(doc => ({
-          description: doc.description,
-          fileName: doc.file ? doc.file.name : null,
-          fileSize: doc.file ? doc.file.size : null,
-        })),
+        verification_status: "unverified",
+        land_type: formData.zoning,
+        price: parseFloat(formData.price) || 0,
+        area: parseFloat(formData.size.value) || 0,
+        posted_date: new Date().toISOString(),
+        ownerId: ownerId,
+        owner: ownerId,
+        land_listing_documents: formData.documents
+          .filter((doc) => !!doc.file)
+          .map((doc) => ({
+            description: doc.description,
+            file_name: doc.file.name,
+            file_size: doc.file.size,
+          })),
+
+        land_listing_images: [],
+        verified_at: null,
+        land_authenticator: null,
+        owner_id: ownerId,
       };
 
-      localStorage.setItem(
-        "land_listings",
-        JSON.stringify([newListing, ...existingListings]),
-      );
+      console.log(newListing);
+      const submitFormData = new FormData();
+      const payloadBlob = new Blob([JSON.stringify(newListing)], {
+        type: "application/json",
+      });
+      submitFormData.append("landData", payloadBlob);
+
+      // Add deedDocument (using the first available document)
+      const deedDoc = formData.documents.find((doc) => !!doc.file);
+      if (deedDoc) {
+        submitFormData.append("deedDocument", deedDoc.file);
+      }
+
+      // Add real images or dummy image if none exist
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach((file) => {
+          submitFormData.append("images", file);
+        });
+      } else {
+        const emptyFile = new File([new Blob([""])], "empty.jpg", {
+          type: "image/jpeg",
+        });
+        submitFormData.append("images", emptyFile);
+      }
+
+      const API_BASE =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+      const response = await fetch(`${API_BASE}/landapp/owners/listings`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`, // Let browser handle multipart boundary organically
+        },
+        body: submitFormData,
+      });
+
+      if (!response.ok) {
+        throw new Error((await response.text()) || "Failed to create listing");
+      }
 
       // Add to logs
       const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
@@ -143,7 +240,12 @@ export default function AddNewLand() {
       localStorage.setItem("owner_logs", JSON.stringify(logs));
 
       router.push("/owner/lists");
-    }, 1000);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit listing: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -153,8 +255,8 @@ export default function AddNewLand() {
           Add New Land Listing
         </h1>
         <p className="text-gray-500 font-medium">
-          Provide details about your property and upload essential documents. All submissions require Ministry
-          approval.
+          Provide details about your property and upload essential documents.
+          All submissions require Ministry approval.
         </p>
       </div>
 
@@ -197,7 +299,10 @@ export default function AddNewLand() {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        location: { ...formData.location, city: e.target.value }
+                        location: {
+                          ...formData.location,
+                          city: e.target.value,
+                        },
                       })
                     }
                     placeholder="City"
@@ -211,7 +316,10 @@ export default function AddNewLand() {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        location: { ...formData.location, state: e.target.value }
+                        location: {
+                          ...formData.location,
+                          state: e.target.value,
+                        },
                       })
                     }
                     placeholder="State/Province"
@@ -225,7 +333,10 @@ export default function AddNewLand() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      location: { ...formData.location, address: e.target.value }
+                      location: {
+                        ...formData.location,
+                        address: e.target.value,
+                      },
                     })
                   }
                   placeholder="Full Address (optional)"
@@ -240,7 +351,10 @@ export default function AddNewLand() {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        location: { ...formData.location, latitude: e.target.value }
+                        location: {
+                          ...formData.location,
+                          latitude: e.target.value,
+                        },
                       })
                     }
                     placeholder="Latitude (optional)"
@@ -254,7 +368,10 @@ export default function AddNewLand() {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        location: { ...formData.location, longitude: e.target.value }
+                        location: {
+                          ...formData.location,
+                          longitude: e.target.value,
+                        },
                       })
                     }
                     placeholder="Longitude (optional)"
@@ -278,7 +395,7 @@ export default function AddNewLand() {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        size: { ...formData.size, value: e.target.value }
+                        size: { ...formData.size, value: e.target.value },
                       })
                     }
                     placeholder="Enter size"
@@ -291,7 +408,7 @@ export default function AddNewLand() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      size: { ...formData.size, unit: e.target.value }
+                      size: { ...formData.size, unit: e.target.value },
                     })
                   }
                   className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors"
@@ -352,15 +469,18 @@ export default function AddNewLand() {
             <div className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl overflow-hidden focus-within:ring-[#9afb21] focus-within:border-[#9afb21] transition-colors">
               <MDEditor
                 value={formData.description}
-                onChange={(value) => setFormData({ ...formData, description: value || "" })}
+                onChange={(value) =>
+                  setFormData({ ...formData, description: value || "" })
+                }
                 preview="edit"
                 hideToolbar={false}
                 height={200}
                 data-color-mode="light"
                 className="custom-md-editor"
                 textareaProps={{
-                  placeholder: "Describe the property's features, soil quality, access to water/roads...",
-                  disabled: isSubmitting
+                  placeholder:
+                    "Describe the property's features, soil quality, access to water/roads...",
+                  disabled: isSubmitting,
                 }}
               />
             </div>
@@ -372,13 +492,16 @@ export default function AddNewLand() {
               Keywords & Tags
             </label>
             <p className="text-sm text-gray-500 mb-4">
-              Add keywords to help investors find your listing. Select from suggestions or add custom tags.
+              Add keywords to help investors find your listing. Select from
+              suggestions or add custom tags.
             </p>
 
             {/* Selected Keywords */}
             {formData.keywords.length > 0 && (
               <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Selected Tags:</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Selected Tags:
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {formData.keywords.map((keyword, index) => (
                     <span
@@ -415,10 +538,12 @@ export default function AddNewLand() {
 
             {/* Predefined Keywords */}
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Suggested Keywords:</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Suggested Keywords:
+              </p>
               <div className="flex flex-wrap gap-2">
                 {predefinedKeywords
-                  .filter(keyword => !formData.keywords.includes(keyword))
+                  .filter((keyword) => !formData.keywords.includes(keyword))
                   .map((keyword, index) => (
                     <button
                       key={index}
@@ -439,15 +564,11 @@ export default function AddNewLand() {
             <label className="block text-sm font-bold text-gray-700 mb-2">
               Property Images
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-              <UploadCloud className="mx-auto text-gray-400 mb-3" size={32} />
-              <p className="font-semibold text-gray-700">
-                Click to upload or drag and drop
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                SVG, PNG, JPG or PDF (max. 10MB)
-              </p>
-            </div>
+            <ImageUploader
+              images={formData.images}
+              setImages={(imgs) => setFormData({ ...formData, images: imgs })}
+              disabled={isSubmitting}
+            />
           </div>
 
           {/* Essential Documents for Ministry Verification */}
@@ -457,7 +578,10 @@ export default function AddNewLand() {
             </label>
             <div className="space-y-4">
               {formData.documents.map((doc, index) => (
-                <div key={index} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-xl p-4 bg-gray-50"
+                >
                   <div className="mb-3">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Document {index + 1} Description
@@ -487,14 +611,23 @@ export default function AddNewLand() {
                         if (file) {
                           // Check file size (10MB limit)
                           if (file.size > 10 * 1024 * 1024) {
-                            alert(`File size exceeds 10MB limit for Document ${index + 1}`);
+                            alert(
+                              `File size exceeds 10MB limit for Document ${index + 1}`,
+                            );
                             e.target.value = "";
                             return;
                           }
                           // Check file type
-                          const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+                          const allowedTypes = [
+                            "application/pdf",
+                            "image/png",
+                            "image/jpeg",
+                            "image/jpg",
+                          ];
                           if (!allowedTypes.includes(file.type)) {
-                            alert(`Invalid file type for Document ${index + 1}. Only PDF, PNG, JPG allowed.`);
+                            alert(
+                              `Invalid file type for Document ${index + 1}. Only PDF, PNG, JPG allowed.`,
+                            );
                             e.target.value = "";
                             return;
                           }

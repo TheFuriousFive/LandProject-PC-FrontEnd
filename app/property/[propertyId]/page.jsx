@@ -15,6 +15,7 @@ import LocationMap from "@/_modules/geospatial/LocationMap";
 import HazardOverlay from "@/_modules/hazardData/HazardOverlay";
 import TrustScoreDisplay from "@/_modules/trustScore/TrustScoreDisplay";
 import ReviewSection from "@/_shared/ReviewSection";
+import QASection from "@/_shared/QASection";
 import GeoUtils from "@/_modules/geospatial/mapUtils";
 import PropertyPageHeader from "@/_modules/property/PropertyPageHeader";
 import { useEffect, useState } from "react";
@@ -126,6 +127,27 @@ export default function PropertyDetailsPage() {
         comment:
           "Good investment opportunity. Soil quality is excellent for agriculture. Some minor access issues during rainy season.",
         aspects: ["Soil quality", "Accessible location"],
+      },
+    ],
+
+    // Questions & Answers
+    questions: [
+      {
+        id: "q-1",
+        investorName: "Alice Smith",
+        date: "2024-03-10",
+        content: "Is there an existing irrigation system in place?",
+        answer:
+          "Yes, there is a drip irrigation system installed covering 30% of the land.",
+        answerDate: "2024-03-11",
+      },
+      {
+        id: "q-2",
+        investorName: "Bob Jones",
+        date: "2024-03-15",
+        content: "What crops were previously grown here?",
+        answer: null,
+        answerDate: null,
       },
     ],
   };
@@ -347,6 +369,13 @@ export default function PropertyDetailsPage() {
               </div>
             </div> */}
 
+            {/* Q&A Section */}
+            <QASection
+              questions={property.questions}
+              listingId={property.id}
+              ownerId={property.owner.id}
+            />
+
             {/* Reviews */}
             <ReviewSection
               reviews={property.reviews}
@@ -430,4 +459,3 @@ export default function PropertyDetailsPage() {
     </main>
   );
 }
-

@@ -1,18 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { User, Mail, Phone, MapPin, Building, ShieldCheck, Calendar, Users, Briefcase, Home } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  ShieldCheck,
+  Calendar,
+  Users,
+  Briefcase,
+  Home,
+} from "lucide-react";
 
 export default function OwnerProfile() {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
-    firstName: "Alice",
-    lastName: "Johnson",
-    email: "alice.invests@example.com",
-    phone: "+1 (555) 123-4567",
-    company: "AJ Capital Group",
-    location: "New York, NY",
-    bio: "Real estate investor specializing in agricultural lands and developing mixed-use properties.",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    company: "",
+    location: "",
+    bio: "",
     dateOfBirth: "",
     gender: "",
     address: "",
@@ -22,14 +34,69 @@ export default function OwnerProfile() {
     preferredContact: "",
   });
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        let token = "";
+        if (typeof window !== "undefined") {
+          const rawToken = localStorage.getItem("token") || "";
+          token = rawToken.replace(/^"|"$/g, "").trim();
+        }
+
+        const API_BASE =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+        const response = await fetch(`${API_BASE}/landapp/owners/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch profile");
+        }
+
+        const data = await response.json();
+
+        // Map backend DTO to our frontend state.
+        // Handles if the backend gives a single 'name' string or separate, etc.
+        const nameParts = data.name ? data.name.split(" ") : [];
+        const fName = nameParts.length > 0 ? nameParts[0] : "";
+        const lName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+
+        setProfile((prev) => ({
+          ...prev,
+          firstName: fName || data.firstName || prev.firstName,
+          lastName: lName || data.lastName || prev.lastName,
+          email: data.email || prev.email,
+          phone: data.phone || data.mobile || prev.phone,
+          location: data.location || data.address || prev.location,
+          address: data.address || prev.address,
+          company: data.company || prev.company,
+          bio: data.bio || prev.bio,
+        }));
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
   const handleSave = () => {
     setIsEditing(false);
-    // Submit to an API here
+    // TODO: Send a PUT request to update profile on backend API when available
+    alert("Profile saved locally! (Backend update API not yet implemented)");
   };
+
+  if (loading) {
+    return <p className="p-10 text-center">Loading profile...</p>;
+  }
 
   return (
     <div className="p-8 md:p-12 max-w-4xl mx-auto">
@@ -99,7 +166,8 @@ export default function OwnerProfile() {
 
               <div>
                 <label className="flex items-center text-sm font-bold text-gray-700 mb-1">
-                  <Calendar size={16} className="mr-2 text-gray-400" /> Date of Birth
+                  <Calendar size={16} className="mr-2 text-gray-400" /> Date of
+                  Birth
                 </label>
                 <input
                   type="date"
@@ -154,7 +222,8 @@ export default function OwnerProfile() {
 
               <div>
                 <label className="flex items-center text-sm font-bold text-gray-700 mb-1">
-                  <Briefcase size={16} className="mr-2 text-gray-400" /> Occupation
+                  <Briefcase size={16} className="mr-2 text-gray-400" />{" "}
+                  Occupation
                 </label>
                 <input
                   type="text"
@@ -169,7 +238,8 @@ export default function OwnerProfile() {
 
               <div>
                 <label className="flex items-center text-sm font-bold text-gray-700 mb-1">
-                  <Building size={16} className="mr-2 text-gray-400" /> Years of Experience
+                  <Building size={16} className="mr-2 text-gray-400" /> Years of
+                  Experience
                 </label>
                 <input
                   type="number"
@@ -185,7 +255,8 @@ export default function OwnerProfile() {
 
               <div>
                 <label className="flex items-center text-sm font-bold text-gray-700 mb-1">
-                  <Home size={16} className="mr-2 text-gray-400" /> Number of Properties
+                  <Home size={16} className="mr-2 text-gray-400" /> Number of
+                  Properties
                 </label>
                 <input
                   type="number"
@@ -222,7 +293,8 @@ export default function OwnerProfile() {
 
               <div>
                 <label className="flex items-center text-sm font-bold text-gray-700 mb-1">
-                  <Phone size={16} className="mr-2 text-gray-400" /> Phone Number
+                  <Phone size={16} className="mr-2 text-gray-400" /> Phone
+                  Number
                 </label>
                 <input
                   type="text"
@@ -236,7 +308,8 @@ export default function OwnerProfile() {
 
               <div>
                 <label className="flex items-center text-sm font-bold text-gray-700 mb-1">
-                  <Mail size={16} className="mr-2 text-gray-400" /> Preferred Contact Method
+                  <Mail size={16} className="mr-2 text-gray-400" /> Preferred
+                  Contact Method
                 </label>
                 <select
                   name="preferredContact"

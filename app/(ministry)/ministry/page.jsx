@@ -130,8 +130,10 @@ export default function MinistryDashboard() {
                       {approval.title}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {approval.location} • {approval.acres} acres •{" "}
-                      {approval.price}
+                      {typeof approval.location === "object"
+                        ? approval.location.address || approval.location.city
+                        : approval.location}{" "}
+                      • {approval.acres} acres • {approval.price}
                     </p>
                   </div>
                 </div>

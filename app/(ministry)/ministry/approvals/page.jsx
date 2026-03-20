@@ -94,7 +94,11 @@ export default function PendingApprovals() {
                       <p className="text-gray-500 font-semibold mb-1">
                         Location
                       </p>
-                      <p className="font-bold text-gray-900">{land.location}</p>
+                      <p className="font-bold text-gray-900">
+                        {typeof land.location === "object"
+                          ? land.location.address || land.location.city
+                          : land.location}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 font-semibold mb-1">Size</p>

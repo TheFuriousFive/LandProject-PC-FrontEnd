@@ -6,8 +6,11 @@ import { Plus, Edit2, Trash2, Eye } from "lucide-react";
 import ConfirmModal from "../../_components/ConfirmModal";
 import EditModal from "../../_components/EditModal";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
 export default function MyAds() {
   const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
@@ -15,33 +18,25 @@ export default function MyAds() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [listingToEdit, setListingToEdit] = useState(null);
 
-  const [loading, setLoading] = useState(true);
-
+  // ---------------- FETCH ----------------
   const fetchListings = async () => {
     try {
-      const token = localStorage.getItem("token") || "";
-      const headers = {
-        "Content-Type": "application/json",
-      };
+      const token = localStorage.getItem("token");
 
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/landapp/owners/listings`, {
-        headers,
+      const response = await fetch(`${API_BASE}/landapp/owners/listings`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch listings");
-      }
+      if (!response.ok) throw new Error("Failed to fetch listings");
 
       const data = await response.json();
-      console.log(data, "data");
       setListings(data);
+      console.log(data);
     } catch (err) {
-      console.error("Error fetching listings:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -51,6 +46,7 @@ export default function MyAds() {
     fetchListings();
   }, []);
 
+  // ---------------- DELETE ----------------
   const initiateDelete = (id) => {
     setListingToDelete(id);
     setDeleteModalOpen(true);
@@ -60,29 +56,32 @@ export default function MyAds() {
     if (!listingToDelete) return;
 
     try {
-      // Mock delete from localStorage (Backend not connected)
-      const updatedListings = listings.filter((l) => l.id !== listingToDelete);
-      localStorage.setItem("land_listings", JSON.stringify(updatedListings));
-      setListings(updatedListings);
+      const token = localStorage.getItem("token");
 
-      // Add to logs
-      const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
-      logs.unshift({
-        id: Date.now(),
-        action: "Deleted listing",
-        target: listings.find((l) => l.id === listingToDelete)?.title,
-        date: new Date().toISOString(),
-      });
-      localStorage.setItem("owner_logs", JSON.stringify(logs));
+      const response = await fetch(
+        `${API_BASE}/landapp/owners/listings/${listingToDelete}`,
+        {
+          method: "DELETE",
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        },
+      );
+
+      if (!response.ok) throw new Error("Delete failed");
+
+      // remove from UI
+      setListings((prev) => prev.filter((l) => l.id !== listingToDelete));
 
       setDeleteModalOpen(false);
       setListingToDelete(null);
     } catch (err) {
       console.error(err);
-      alert("Failed to delete listing. Please try again.");
+      alert("Failed to delete listing");
     }
   };
 
+  // ---------------- EDIT ----------------
   const initiateEdit = (land) => {
     setListingToEdit(land);
     setEditModalOpen(true);
@@ -91,9 +90,10 @@ export default function MyAds() {
   const handleEditSuccess = () => {
     setEditModalOpen(false);
     setListingToEdit(null);
-    fetchListings(); // Refetch data
+    fetchListings();
   };
 
+  // ---------------- STATUS UI ----------------
   const getStatusBadge = (status) => {
     switch (status) {
       case "approved":
@@ -117,6 +117,11 @@ export default function MyAds() {
     }
   };
 
+  // ---------------- UI ----------------
+  if (loading) {
+    return <p className="p-10 text-center">Loading...</p>;
+  }
+
   return (
     <>
       <div className="p-8 md:p-12 max-w-6xl mx-auto">
@@ -125,83 +130,60 @@ export default function MyAds() {
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
               My Ads
             </h1>
-            <p className="text-gray-500 font-medium">
-              Manage your land listings and track their approval status.
-            </p>
+            <p className="text-gray-500">Manage your land listings.</p>
           </div>
+
           <Link
             href="/owner/add-land"
-            className="bg-[#0f0f11] text-[#9afb21] px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-black transition-colors"
+            className="bg-black text-lime-400 px-5 py-2.5 rounded-xl flex items-center gap-2"
           >
             <Plus size={20} />
             Add New Land
           </Link>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white border rounded-2xl overflow-hidden shadow-sm">
           {listings.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
-              <p>You haven&apos;t listed any properties yet.</p>
+              No listings found
             </div>
           ) : (
             <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-6 py-4 font-bold text-gray-700 text-sm">
-                    Listing
-                  </th>
-                  <th className="px-6 py-4 font-bold text-gray-700 text-sm">
-                    Location
-                  </th>
-                  <th className="px-6 py-4 font-bold text-gray-700 text-sm">
-                    Price
-                  </th>
-                  <th className="px-6 py-4 font-bold text-gray-700 text-sm">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 font-bold text-gray-700 text-sm text-right">
-                    Actions
-                  </th>
+                  <th className="px-6 py-4">Listing</th>
+                  <th className="px-6 py-4">Location</th>
+                  <th className="px-6 py-4">Price</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+
+              <tbody className="divide-y">
                 {listings.map((land) => (
-                  <tr
-                    key={land.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
+                  <tr key={land.id}>
                     <td className="px-6 py-4">
-                      <p className="font-bold text-gray-900">{land.title}</p>
+                      <p className="font-bold">{land.title}</p>
                       <p className="text-sm text-gray-500">{land.area} Acres</p>
                     </td>
-                    <td className="px-6 py-4 text-gray-700">{land.location}</td>
-                    <td className="px-6 py-4 font-semibold text-gray-900">
-                      {land.price}
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(land.status || "pending")}
-                    </td>
+
+                    <td className="px-6 py-4">{land.location}</td>
+
+                    <td className="px-6 py-4 font-semibold">{land.price}</td>
+
+                    <td className="px-6 py-4">{getStatusBadge(land.status)}</td>
+
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-3">
-                        <Link
-                          href={`/property/${land.id}`}
-                          className="text-gray-400 hover:text-blue-600 transition-colors"
-                          title="View Details"
-                        >
+                      <div className="flex justify-end gap-3">
+                        <Link href={`/property/${land.id}`}>
                           <Eye size={18} />
                         </Link>
-                        <button
-                          onClick={() => initiateEdit(land)}
-                          className="text-gray-400 hover:text-gray-900 transition-colors"
-                          title="Edit"
-                        >
+
+                        <button onClick={() => initiateEdit(land)}>
                           <Edit2 size={18} />
                         </button>
-                        <button
-                          onClick={() => initiateDelete(land.id)}
-                          className="text-gray-400 hover:text-red-600 transition-colors"
-                          title="Delete"
-                        >
+
+                        <button onClick={() => initiateDelete(land.id)}>
                           <Trash2 size={18} />
                         </button>
                       </div>
@@ -216,22 +198,16 @@ export default function MyAds() {
 
       <ConfirmModal
         isOpen={deleteModalOpen}
-        title="Delete Land Listing"
-        message="Are you sure you want to delete this listing? This action cannot be undone."
+        title="Delete Listing"
+        message="Are you sure?"
         onConfirm={confirmDelete}
-        onCancel={() => {
-          setDeleteModalOpen(false);
-          setListingToDelete(null);
-        }}
+        onCancel={() => setDeleteModalOpen(false)}
       />
 
       <EditModal
         isOpen={editModalOpen}
         initialData={listingToEdit}
-        onClose={() => {
-          setEditModalOpen(false);
-          setListingToEdit(null);
-        }}
+        onClose={() => setEditModalOpen(false)}
         onSuccess={handleEditSuccess}
       />
     </>

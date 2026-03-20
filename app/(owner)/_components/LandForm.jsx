@@ -1,8 +1,12 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { UploadCloud } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { CheckCircle } from "lucide-react";
+import dynamic from "next/dynamic";
+import ImageUploader from "./ImageUploader";
+
+// Dynamically import MDEditor to avoid SSR issues
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
 export default function LandForm({
   mode = "create",
@@ -10,250 +14,474 @@ export default function LandForm({
   onSubmitSuccess,
   onCancel,
 }) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm({
-    defaultValues: initialData || {
-      title: "",
-      location: "",
-      area: "",
-      price: "",
-      landType: "Agricultural",
-      description: "",
+  const [formData, setFormData] = useState({
+    title: "",
+    location: {
+      city: "",
+      state: "",
+      address: "",
+      latitude: "",
+      longitude: "",
     },
+    size: {
+      value: "",
+      unit: "acres",
+    },
+    price: "",
+    zoning: "Agricultural",
+    description: "",
+    keywords: [],
+    images: [],
+    documents: [{ file: null, description: "" }],
   });
 
-  const [apiError, setApiError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [keywordInput, setKeywordInput] = useState("");
 
-  const onSubmit = async (formData) => {
-    console.log(formData);
-    setApiError(null);
-    try {
-      // Mock submission using localStorage (Backend not connected)
-      if (mode === "create") {
-        const existingListings = JSON.parse(
-          localStorage.getItem("land_listings") || "[]",
-        );
-        const newListing = {
-          ...formData,
-          id: "land_" + Date.now(),
-          status: "pending",
-          ownerId: "owner1",
-          createdAt: new Date().toISOString(),
-          price: parseFloat(formData.price),
-          area: parseFloat(formData.area),
-        };
-        localStorage.setItem(
-          "land_listings",
-          JSON.stringify([newListing, ...existingListings]),
-        );
-      } else if (mode === "edit") {
-        const existingListings = JSON.parse(
-          localStorage.getItem("land_listings") || "[]",
-        );
-        const updatedListings = existingListings.map((listing) =>
-          listing.id === initialData.id
-            ? {
-                ...listing,
-                ...formData,
-                price: parseFloat(formData.price),
-                area: parseFloat(formData.area),
-              }
-            : listing,
-        );
-        localStorage.setItem(
-          "land_listings",
-          JSON.stringify(updatedListings),
-        );
+  // Initialize data if in edit mode
+  useEffect(() => {
+    if (initialData && mode === "edit") {
+      let city = "";
+      let state = "";
+
+      // Parse "City, State" from the backend string
+      if (initialData.location) {
+        const parts = initialData.location.split(",");
+        if (parts.length >= 2) {
+          city = parts[0].trim();
+          state = parts[1].trim();
+        } else {
+          city = initialData.location; // fallback
+        }
       }
 
-      // Add to logs
+      setFormData({
+        title: initialData.title || "",
+        location: {
+          city: city,
+          state: state,
+          address: "",
+          latitude: "",
+          longitude: "",
+        },
+        size: {
+          value: initialData.area || "",
+          unit: "acres",
+        },
+        price: initialData.price || "",
+        zoning: initialData.land_type || "Agricultural",
+        description: initialData.description || "",
+        keywords: [], // No keywords array provided in basic DTO, reset to empty
+        images: [], // File objects cannot be repopulated securely from URLs, needs re-upload or custom handling backend
+        documents: [{ file: null, description: "" }],
+      });
+    }
+  }, [initialData, mode]);
+
+  const predefinedKeywords = [
+    "Agricultural",
+    "Residential",
+    "Commercial",
+    "Industrial",
+    "Forest",
+    "Waterfront",
+    "Mountain View",
+    "City View",
+    "Investment",
+    "Development",
+  ];
+
+  const addKeyword = (keyword) => {
+    if (keyword && !formData.keywords.includes(keyword)) {
+      setFormData({ ...formData, keywords: [...formData.keywords, keyword] });
+    }
+    setKeywordInput("");
+  };
+
+  const removeKeyword = (keywordToRemove) => {
+    setFormData({
+      ...formData,
+      keywords: formData.keywords.filter((k) => k !== keywordToRemove),
+    });
+  };
+
+  const handleKeywordKeyPress = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const keyword = keywordInput.trim();
+      if (keyword) addKeyword(keyword);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.location.city.trim() || !formData.location.state.trim()) {
+      alert("Please provide both city and state for the location.");
+      return;
+    }
+    if (!formData.size.value || parseFloat(formData.size.value) <= 0) {
+      alert("Please provide a valid size greater than 0.");
+      return;
+    }
+    if (!formData.description || formData.description.trim() === "") {
+      alert("Please provide a description for the property.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      let token = "";
+      let ownerId = null;
+      if (typeof window !== "undefined") {
+        const rawToken = localStorage.getItem("token") || "";
+        token = rawToken.replace(/^"|"$/g, "").trim();
+        let userStr = localStorage.getItem("user");
+        if (userStr && userStr.startsWith('"') && userStr.endsWith('"')) {
+          userStr = JSON.parse(userStr);
+        }
+        const loggedInUser = userStr ? JSON.parse(userStr) : null;
+        ownerId =
+          loggedInUser?.id ||
+          loggedInUser?.userId ||
+          loggedInUser?.ownerId ||
+          loggedInUser?.user?.id ||
+          loggedInUser?.user?.Id ||
+          null;
+      }
+
+      const listingPayload = {
+        title: formData.title,
+        description: formData.description,
+        location: `${formData.location.city}, ${formData.location.state}`,
+        land_type: formData.zoning,
+        price: parseFloat(formData.price) || 0,
+        area: parseFloat(formData.size.value) || 0,
+        ownerId: ownerId,
+        owner: ownerId,
+        owner_id: ownerId,
+        land_listing_documents: formData.documents
+          .filter((doc) => !!doc.file)
+          .map((doc) => ({
+            description: doc.description,
+            file_name: doc.file.name,
+            file_size: doc.file.size,
+          })),
+        land_listing_images: [],
+      };
+
+      const submitFormData = new FormData();
+      const payloadBlob = new Blob([JSON.stringify(listingPayload)], {
+        type: "application/json",
+      });
+      submitFormData.append("landData", payloadBlob);
+
+      const deedDoc = formData.documents.find((doc) => !!doc.file);
+      if (deedDoc) {
+        submitFormData.append("deedDocument", deedDoc.file);
+      } else if (mode === "create") {
+        // Optionally block if creating, but let's be flexible or assume edit doesn't demand re-uploading doc
+      }
+
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach((file) => {
+          submitFormData.append("images", file);
+        });
+      } else {
+        const emptyFile = new File([new Blob([""])], "empty.jpg", {
+          type: "image/jpeg",
+        });
+        submitFormData.append("images", emptyFile);
+      }
+
+      const API_BASE =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
+      // If editing, point to PUT endpoint, else POST
+      const url =
+        mode === "edit" && initialData?.id
+          ? `${API_BASE}/landapp/owners/listings/${initialData.id}`
+          : `${API_BASE}/landapp/owners/listings`;
+
+      const method = mode === "edit" ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: submitFormData,
+      });
+
+      if (!response.ok) {
+        throw new Error((await response.text()) || `Failed to ${mode} listing`);
+      }
+
       const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
       logs.unshift({
         id: Date.now(),
-        action: mode === "create" ? "Created new listing" : "Updated listing",
-        target: formData.title,
+        action: mode === "create" ? "Submitted new listing" : "Updated listing",
+        target: listingPayload.title,
         date: new Date().toISOString(),
       });
       localStorage.setItem("owner_logs", JSON.stringify(logs));
 
-      if (onSubmitSuccess) {
-        onSubmitSuccess();
-      }
+      if (onSubmitSuccess) onSubmitSuccess();
     } catch (err) {
-      setApiError(err.message || "An error occurred while saving.");
+      console.error(err);
+      alert(`Failed to ${mode} listing: ` + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-200 w-full"
-    >
-      {apiError && <p className="text-red-500 mb-4">{apiError}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        <div className="space-y-6 md:col-span-2">
+    <form onSubmit={handleSubmit} className="w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="space-y-4 md:col-span-2">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 mb-1">
               Listing Title
             </label>
             <input
-              {...register("title", { required: "Title is required" })}
-              placeholder="e.g. Premium Agricultural Land in Kansas"
-              className={`w-full bg-gray-50 border ${errors.title ? "border-red-500" : "border-gray-200"} text-gray-900 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors`}
+              required
+              type="text"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              placeholder="e.g. Premium Agricultural Land"
+              className="w-full bg-white border border-gray-200 text-gray-900 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] outline-none"
               disabled={isSubmitting}
             />
-            {errors.title && (
-              <span className="text-red-500 text-xs mt-1">
-                {errors.title.message}
-              </span>
-            )}
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Location
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Location Details
             </label>
-            <input
-              {...register("location", { required: "Location is required" })}
-              placeholder="City, State"
-              className={`w-full bg-gray-50 border ${errors.location ? "border-red-500" : "border-gray-200"} text-gray-900 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors`}
-              disabled={isSubmitting}
-            />
-            {errors.location && (
-              <span className="text-red-500 text-xs mt-1">
-                {errors.location.message}
-              </span>
-            )}
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                required
+                type="text"
+                value={formData.location.city}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    location: { ...formData.location, city: e.target.value },
+                  })
+                }
+                placeholder="City"
+                className="w-full bg-white border border-gray-200 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] outline-none"
+                disabled={isSubmitting}
+              />
+              <input
+                required
+                type="text"
+                value={formData.location.state}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    location: { ...formData.location, state: e.target.value },
+                  })
+                }
+                placeholder="State"
+                className="w-full bg-white border border-gray-200 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] outline-none"
+                disabled={isSubmitting}
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Size (Acres / Area)
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Size
             </label>
-            <input
-              type="number"
-              {...register("area", { required: "Size is required" })}
-              placeholder="e.g. 120"
-              className={`w-full bg-gray-50 border ${errors.area ? "border-red-500" : "border-gray-200"} text-gray-900 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors`}
-              disabled={isSubmitting}
-            />
-            {errors.area && (
-              <span className="text-red-500 text-xs mt-1">
-                {errors.area.message}
-              </span>
-            )}
+            <div className="flex gap-3">
+              <input
+                required
+                type="number"
+                value={formData.size.value}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    size: { ...formData.size, value: e.target.value },
+                  })
+                }
+                placeholder="Area"
+                className="w-full bg-white border border-gray-200 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] outline-none"
+                disabled={isSubmitting}
+              />
+              <select
+                value={formData.size.unit}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    size: { ...formData.size, unit: e.target.value },
+                  })
+                }
+                className="w-32 bg-white border border-gray-200 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] outline-none"
+                disabled={isSubmitting}
+              >
+                <option value="acres">Acres</option>
+                <option value="hectares">Hectares</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 mb-1">
               Asking Price
             </label>
             <input
-              {...register("price", { required: "Price is required" })}
-              placeholder="e.g. $250,000"
-              className={`w-full bg-gray-50 border ${errors.price ? "border-red-500" : "border-gray-200"} text-gray-900 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors`}
+              required
+              type="text"
+              value={formData.price}
+              onChange={(e) =>
+                setFormData({ ...formData, price: e.target.value })
+              }
+              placeholder="Price"
+              className="w-full bg-white border border-gray-200 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] outline-none"
               disabled={isSubmitting}
             />
-            {errors.price && (
-              <span className="text-red-500 text-xs mt-1">
-                {errors.price.message}
-              </span>
-            )}
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Land Type
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Zoning Type
             </label>
             <select
-              {...register("landType")}
-              className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors"
+              value={formData.zoning}
+              onChange={(e) =>
+                setFormData({ ...formData, zoning: e.target.value })
+              }
+              className="w-full bg-white border border-gray-200 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] outline-none"
               disabled={isSubmitting}
             >
-              <option value="Agricultural">Agricultural</option>
-              <option value="Residential">Residential</option>
-              <option value="Commercial">Commercial</option>
-              <option value="Mixed Use">Mixed Use</option>
+              <option>Agricultural</option>
+              <option>Residential</option>
+              <option>Commercial</option>
+              <option>Mixed Use</option>
             </select>
           </div>
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-bold text-gray-700 mb-2">
+          <label className="block text-sm font-bold text-gray-700 mb-1">
             Description
           </label>
-          <textarea
-            rows={4}
-            {...register("description", {
-              required: "Description is required",
-            })}
-            placeholder="Describe the property's features, soil quality, access to water/roads..."
-            className={`w-full bg-gray-50 border ${errors.description ? "border-red-500" : "border-gray-200"} text-gray-900 text-sm rounded-xl px-4 py-3 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors resize-none`}
-            disabled={isSubmitting}
-          ></textarea>
-          {errors.description && (
-            <span className="text-red-500 text-xs mt-1">
-              {errors.description.message}
-            </span>
-          )}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden focus-within:ring-[#9afb21]">
+            <MDEditor
+              value={formData.description}
+              onChange={(val) =>
+                setFormData({ ...formData, description: val || "" })
+              }
+              preview="edit"
+              hideToolbar={false}
+              height={150}
+              data-color-mode="light"
+              textareaProps={{ disabled: isSubmitting }}
+            />
+          </div>
         </div>
 
-        {/* Image Upload */}
+        {/* Property Images */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            Property Images / Documents
+          <label className="block text-sm font-bold text-gray-700 mb-1">
+            Update Images
           </label>
-          <label className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer block">
-            <input
-              type="file"
-              multiple
-              accept=".svg,.png,.jpg,.jpeg,.pdf"
-              className="hidden"
-              {...register("documents")}
-              disabled={isSubmitting}
-            />
-            <UploadCloud className="mx-auto text-gray-400 mb-3" size={32} />
-            <p className="font-semibold text-gray-700">
-              Click to upload or drag and drop
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              SVG, PNG, JPG or PDF (max. 10MB)
-            </p>
+          <p className="text-xs text-gray-500 mb-2">
+            Note: To replace images securely, re-upload them here.
+          </p>
+          <ImageUploader
+            images={formData.images}
+            setImages={(imgs) => setFormData({ ...formData, images: imgs })}
+            disabled={isSubmitting}
+          />
+        </div>
+
+        {/* Essential Documents */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-bold text-gray-700 mb-1">
+            Update Documents
           </label>
+          {formData.documents.map((doc, index) => (
+            <div
+              key={index}
+              className="border border-gray-200 rounded-xl p-4 bg-white"
+            >
+              <div className="mb-3">
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Description
+                </label>
+                <input
+                  type="text"
+                  value={doc.description}
+                  onChange={(e) => {
+                    const newDocs = [...formData.documents];
+                    newDocs[index].description = e.target.value;
+                    setFormData({ ...formData, documents: newDocs });
+                  }}
+                  placeholder="Document description"
+                  className="w-full bg-white border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Upload Document
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const newDocs = [...formData.documents];
+                      newDocs[index].file = file;
+                      setFormData({ ...formData, documents: newDocs });
+                    }
+                  }}
+                  className="w-full text-sm outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#9afb21] file:text-black"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex gap-4 items-center mt-6">
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-6 py-2 border border-gray-200 text-gray-700 font-bold hover:bg-gray-50 rounded-xl mr-3"
+          disabled={isSubmitting}
+        >
+          Cancel
+        </button>
         <button
           type="submit"
-          className="bg-[#0f0f11] text-[#9afb21] px-6 py-3 rounded-xl font-bold hover:bg-black transition-colors"
+          className="bg-[#0f0f11] text-[#9afb21] px-8 py-2 rounded-xl font-bold hover:bg-black flex items-center justify-center gap-2"
           disabled={isSubmitting}
         >
           {isSubmitting
             ? "Saving..."
             : mode === "edit"
               ? "Save Changes"
-              : "Submit Listing"}
+              : "Submit"}
+          {!isSubmitting && <CheckCircle size={18} />}
         </button>
-
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-gray-600 px-4 py-2 font-semibold hover:text-gray-900 transition-colors"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-        )}
       </div>
+
+      <style>{`
+        .w-md-editor { border: none !important; box-shadow: none !important; }
+        .w-md-editor-text { font-size: 0.875rem !important; padding: 1rem !important; }
+      `}</style>
     </form>
   );
 }

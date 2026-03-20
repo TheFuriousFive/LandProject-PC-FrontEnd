@@ -1,7 +1,7 @@
 /**
  * Central Export File for All Utilities
  * This allows easier imports throughout the application
- * Example: import { propertyService, createLogger } from '@/lib'
+ * Example: import { getProperty, createLogger } from '@/lib'
  */
 
 // API Configuration
@@ -13,30 +13,8 @@ export {
   HTTP_STATUS,
 } from "./api/config";
 
-// API Client
-export {
-  APIError,
-  apiCall,
-  apiGet,
-  apiPost,
-  apiPut,
-  apiPatch,
-  apiDelete,
-  getErrorMessage,
-} from "./api/client";
-
 // API Services
-export {
-  authService,
-  propertyService,
-  reviewService,
-  trustScoreService,
-  hazardService,
-  documentService,
-  geospatialService,
-  userService,
-  approvalService,
-} from "./api/services";
+export * from "./api/services";
 
 // Helpers
 export {

@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { appointmentService } from "../../../lib/api/services";
 import AppointmentResponseCard from "../../_components/AppointmentResponseCard";
 import {
   Mail,
@@ -24,13 +23,21 @@ export default function AppointmentResponsesPage() {
         setLoading(true);
         setError(null);
         // Call the API to get investor's appointment responses
-        const response = await appointmentService.getInvestorResponses();
+        let token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("token") || ""
+            : "";
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to fetch");
+        const response = await res.json();
         setResponses(response.data || response || []);
       } catch (err) {
         console.error("Failed to fetch appointment responses:", err);
         setError(
           err.response?.data?.message ||
-            "Failed to load appointment responses. Please try again later."
+            "Failed to load appointment responses. Please try again later.",
         );
         // For demo purposes, show sample data if API fails
         setResponses(getSampleResponses());
@@ -47,23 +54,30 @@ export default function AppointmentResponsesPage() {
       id: "apt-req-001",
       propertyTitle: "Riverside Land Plot, 2.5 Acres",
       propertyLocation: "Downtown New York, NY",
-      appointmentDateTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+      appointmentDateTime: new Date(
+        Date.now() + 5 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
       appointmentType: "site_visit",
-      notes: "Very interested in this property. Would like to schedule a site visit at your earliest convenience.",
+      notes:
+        "Very interested in this property. Would like to schedule a site visit at your earliest convenience.",
       status: "accepted",
       ownerName: "John Smith",
       ownerEmail: "john.smith@example.com",
       ownerPhone: "+1-555-0101",
-      responseMessage: "Great! I can accommodate your visit on the proposed date.",
+      responseMessage:
+        "Great! I can accommodate your visit on the proposed date.",
       requestDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: "apt-req-002",
       propertyTitle: "Mountain View Estate, 5 Acres",
       propertyLocation: "Boulder, CO",
-      appointmentDateTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+      appointmentDateTime: new Date(
+        Date.now() + 10 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
       appointmentType: "discussion",
-      notes: "Interested in discussing development potential and zoning regulations.",
+      notes:
+        "Interested in discussing development potential and zoning regulations.",
       status: "pending",
       ownerName: "Sarah Johnson",
       ownerEmail: "sarah.johnson@example.com",
@@ -74,7 +88,9 @@ export default function AppointmentResponsesPage() {
       id: "apt-req-003",
       propertyTitle: "Lakeside Property, 3 Acres",
       propertyLocation: "Seattle, WA",
-      appointmentDateTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      appointmentDateTime: new Date(
+        Date.now() - 5 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
       appointmentType: "site_visit",
       notes: "Love the waterfront aspect. Would like to visit.",
       status: "rejected",
@@ -89,7 +105,9 @@ export default function AppointmentResponsesPage() {
       id: "apt-req-004",
       propertyTitle: "Farm Land with Barn, 10 Acres",
       propertyLocation: "Madison, WI",
-      appointmentDateTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      appointmentDateTime: new Date(
+        Date.now() + 3 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
       appointmentType: "discussion",
       notes: "Curious about irrigation systems and soil quality documentation.",
       status: "rescheduled",
@@ -97,7 +115,9 @@ export default function AppointmentResponsesPage() {
       ownerEmail: "emily.rodriguez@example.com",
       ownerPhone: "+1-555-0104",
       responseMessage: "I can reschedule to a time that works better for me.",
-      rescheduledDateTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      rescheduledDateTime: new Date(
+        Date.now() + 7 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
       requestDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     },
   ];
@@ -116,7 +136,22 @@ export default function AppointmentResponsesPage() {
 
   const handleReschedule = async (appointmentId, rescheduleData) => {
     try {
-      await appointmentService.requestReschedule(appointmentId, rescheduleData);
+      let token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") || ""
+          : "";
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/appointments/${appointmentId}/reschedule`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ rescheduleData }),
+        },
+      );
+      if (!res.ok) throw new Error("Failed");
       setResponses(
         responses.map((resp) =>
           resp.id === appointmentId
@@ -124,10 +159,11 @@ export default function AppointmentResponsesPage() {
                 ...resp,
                 status: "rescheduled",
                 rescheduledDateTime: rescheduleData.newDateTime,
-                responseMessage: rescheduleData.reason || "Reschedule requested",
+                responseMessage:
+                  rescheduleData.reason || "Reschedule requested",
               }
-            : resp
-        )
+            : resp,
+        ),
       );
     } catch (err) {
       console.error("Failed to reschedule appointment:", err);
@@ -261,7 +297,9 @@ export default function AppointmentResponsesPage() {
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
                 <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-red-900">Error Loading Responses</p>
+                  <p className="font-semibold text-red-900">
+                    Error Loading Responses
+                  </p>
                   <p className="text-red-800 text-sm mt-1">{error}</p>
                 </div>
               </div>
@@ -273,8 +311,8 @@ export default function AppointmentResponsesPage() {
                 No {filter !== "all" ? filter : ""} responses yet
               </h3>
               <p className="text-gray-600 text-center max-w-sm">
-                Your appointment requests will appear here once property owners respond.
-                Keep a close eye on this section for updates!
+                Your appointment requests will appear here once property owners
+                respond. Keep a close eye on this section for updates!
               </p>
             </div>
           ) : (
