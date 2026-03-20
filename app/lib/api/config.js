@@ -71,6 +71,20 @@ export const API_ENDPOINTS = {
     APPROVE: (propertyId) => `/approvals/${propertyId}/approve`,
     REJECT: (propertyId) => `/approvals/${propertyId}/reject`,
   },
+
+  // Appointments
+  APPOINTMENTS: {
+    LIST: "/appointments",
+    GET_OWNER_INBOX: "/appointments/owner/inbox",
+    GET_INVESTOR_RESPONSES: "/appointments/investor/responses",
+    CREATE: "/appointments",
+    GET_ONE: (id) => `/appointments/${id}`,
+    ACCEPT: (id) => `/appointments/${id}/accept`,
+    REJECT: (id) => `/appointments/${id}/reject`,
+    RESCHEDULE: (id) => `/appointments/${id}/reschedule`,
+    REQUEST_RESCHEDULE: (id) => `/appointments/${id}/request-reschedule`,
+    CANCEL: (id) => `/appointments/${id}/cancel`,
+  },
 };
 
 // HTTP Methods

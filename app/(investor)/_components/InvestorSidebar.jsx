@@ -6,6 +6,7 @@ import {
   Compass,
   Heart,
   MessageSquare,
+  Calendar,
   User,
   LogOut,
 } from "lucide-react";
@@ -29,6 +30,7 @@ export default function InvestorSidebar() {
     { name: "Dashboard", href: "/investor", icon: Home },
     { name: "Browse Listings", href: "/investor/browse", icon: Compass },
     { name: "Favorites", href: "/investor/favorites", icon: Heart },
+    { name: "Appointment Responses", href: "/investor/appointments", icon: Calendar },
     { name: "Messages", href: "/investor/messages", icon: MessageSquare },
     { name: "Profile", href: "/investor/profile", icon: User },
   ];
