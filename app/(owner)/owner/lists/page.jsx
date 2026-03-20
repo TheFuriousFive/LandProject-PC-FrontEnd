@@ -29,6 +29,7 @@ export default function MyAds() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      ////////////////me api endpoint eka waradi mokada backend eke me api endpoint aka thiyenne post method ekk widiyt apit data yawanna database ekt
       const response = await fetch(`${apiUrl}/landapp/owners/listings`, {
         headers,
       });
