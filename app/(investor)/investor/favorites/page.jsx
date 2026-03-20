@@ -1,34 +1,19 @@
 import Link from "next/link";
 import { Heart, Trash2, MapPin } from "lucide-react";
+import BackButton from "@/_components/BackButton";
 
 export const metadata = {
   title: "Favorites | Investor Portal",
 };
 
 export default function InvestorFavorites() {
-  const favorites = [
-    {
-      id: 1,
-      title: "Premium Agricultural Land",
-      location: "Iowa",
-      acres: 320,
-      price: "$1.2M",
-      imageUrl:
-        "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800&auto=format&fit=crop",
-    },
-    {
-      id: 2,
-      title: "Development Ready Plot",
-      location: "Texas",
-      acres: 85,
-      price: "$850K",
-      imageUrl:
-        "https://images.unsplash.com/photo-1492617519907-e0f71f7c76fc?q=80&w=800&auto=format&fit=crop",
-    },
-  ];
+  const favorites = [];
 
   return (
     <main className="p-8 md:p-12 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <BackButton />
+      </div>
       <div className="mb-12">
         <h1 className="text-4xl font-extrabold tracking-tight mb-2">
           Your Favorites
@@ -38,7 +23,14 @@ export default function InvestorFavorites() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {favorites.length === 0 ? (
+        <div className="text-center py-20">
+          <Heart className="mx-auto text-gray-300 mb-4" size={64} />
+          <p className="text-gray-500 text-lg font-medium">No favorites yet.</p>
+          <p className="text-gray-400 text-sm mt-2">Start adding properties to your favorites!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {favorites.map((land) => (
           <div
             key={land.id}
@@ -64,7 +56,7 @@ export default function InvestorFavorites() {
                 </h3>
                 <div className="flex items-center text-gray-500 text-sm">
                   <MapPin size={16} className="mr-1" />
-                  {land.location}
+                  {typeof land.location === 'object' && land.location !== null ? `${land.location.city || ''}, ${land.location.state || ''}` : land.location}
                 </div>
               </div>
 
@@ -88,23 +80,6 @@ export default function InvestorFavorites() {
           </div>
         ))}
       </div>
-
-      {favorites.length === 0 && (
-        <div className="text-center py-24 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
-          <Heart size={48} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
-            No favorites yet
-          </h3>
-          <p className="text-gray-500 mb-6">
-            Start browsing to find your next investment.
-          </p>
-          <Link
-            href="/investor/browse"
-            className="bg-[#9afb21] text-[#0f0f11] px-6 py-3 rounded-xl font-bold hover:bg-[#8bed1c] transition-colors inline-block"
-          >
-            Browse Listings
-          </Link>
-        </div>
       )}
     </main>
   );

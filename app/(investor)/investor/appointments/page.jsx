@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { appointmentService } from "../../../lib/api/services";
 import AppointmentResponseCard from "../../_components/AppointmentResponseCard";
+import BackButton from "@/_components/BackButton";
 import {
   Mail,
   AlertCircle,
@@ -32,8 +33,6 @@ export default function AppointmentResponsesPage() {
           err.response?.data?.message ||
             "Failed to load appointment responses. Please try again later."
         );
-        // For demo purposes, show sample data if API fails
-        setResponses(getSampleResponses());
       } finally {
         setLoading(false);
       }
@@ -41,66 +40,6 @@ export default function AppointmentResponsesPage() {
 
     fetchResponses();
   }, []);
-
-  const getSampleResponses = () => [
-    {
-      id: "apt-req-001",
-      propertyTitle: "Riverside Land Plot, 2.5 Acres",
-      propertyLocation: "Downtown New York, NY",
-      appointmentDateTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      appointmentType: "site_visit",
-      notes: "Very interested in this property. Would like to schedule a site visit at your earliest convenience.",
-      status: "accepted",
-      ownerName: "John Smith",
-      ownerEmail: "john.smith@example.com",
-      ownerPhone: "+1-555-0101",
-      responseMessage: "Great! I can accommodate your visit on the proposed date.",
-      requestDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "apt-req-002",
-      propertyTitle: "Mountain View Estate, 5 Acres",
-      propertyLocation: "Boulder, CO",
-      appointmentDateTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-      appointmentType: "discussion",
-      notes: "Interested in discussing development potential and zoning regulations.",
-      status: "pending",
-      ownerName: "Sarah Johnson",
-      ownerEmail: "sarah.johnson@example.com",
-      ownerPhone: "+1-555-0102",
-      requestDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "apt-req-003",
-      propertyTitle: "Lakeside Property, 3 Acres",
-      propertyLocation: "Seattle, WA",
-      appointmentDateTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      appointmentType: "site_visit",
-      notes: "Love the waterfront aspect. Would like to visit.",
-      status: "rejected",
-      ownerName: "Michael Chen",
-      ownerEmail: "michael.chen@example.com",
-      ownerPhone: "+1-555-0103",
-      rejectionReason: "Property is already under contract with another buyer.",
-      responseMessage: "Unfortunately, this property is no longer available.",
-      requestDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "apt-req-004",
-      propertyTitle: "Farm Land with Barn, 10 Acres",
-      propertyLocation: "Madison, WI",
-      appointmentDateTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      appointmentType: "discussion",
-      notes: "Curious about irrigation systems and soil quality documentation.",
-      status: "rescheduled",
-      ownerName: "Emily Rodriguez",
-      ownerEmail: "emily.rodriguez@example.com",
-      ownerPhone: "+1-555-0104",
-      responseMessage: "I can reschedule to a time that works better for me.",
-      rescheduledDateTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      requestDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
 
   const filteredResponses = responses.filter((resp) => {
     if (filter === "all") return true;

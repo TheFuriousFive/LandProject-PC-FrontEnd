@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Edit2, Trash2, Eye } from "lucide-react";
+import BackButton from "@/_components/BackButton";
 import ConfirmModal from "../../_components/ConfirmModal";
 import EditModal from "../../_components/EditModal";
 
@@ -19,7 +20,7 @@ export default function MyAds() {
 
   const fetchListings = async () => {
     try {
-      // Mock data from localStorage (Backend not connected)
+      // Fetching from localStorage (Backend integration pending)
       const storedListings = JSON.parse(
         localStorage.getItem("land_listings") || "[]",
       );
@@ -44,7 +45,7 @@ export default function MyAds() {
     if (!listingToDelete) return;
 
     try {
-      // Mock delete from localStorage (Backend not connected)
+      // Deleting from localStorage (Backend integration pending)
       const updatedListings = listings.filter((l) => l.id !== listingToDelete);
       localStorage.setItem(
         "land_listings",
@@ -161,7 +162,7 @@ export default function MyAds() {
                       <p className="font-bold text-gray-900">{land.title}</p>
                       <p className="text-sm text-gray-500">{land.area} Acres</p>
                     </td>
-                    <td className="px-6 py-4 text-gray-700">{land.location}</td>
+                    <td className="px-6 py-4 text-gray-700">{typeof land.location === 'object' && land.location !== null ? `${land.location.city || ''}, ${land.location.state || ''}` : land.location}</td>
                     <td className="px-6 py-4 font-semibold text-gray-900">
                       {land.price}
                     </td>

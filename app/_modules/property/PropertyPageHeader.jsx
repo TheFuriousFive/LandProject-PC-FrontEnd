@@ -74,7 +74,9 @@ export default function PropertyPageHeader({ role, property }) {
           </Link>
           <span className="text-gray-300">/</span>
           <span className="hover:text-gray-900 transition-colors truncate max-w-[120px] sm:max-w-xs">
-            {property.location}
+            {typeof property.location === 'object' 
+              ? `${property.location.city}, ${property.location.state}` 
+              : property.location}
           </span>
           <span className="text-gray-300">/</span>
           <span className="text-gray-900 font-bold truncate max-w-[120px] sm:max-w-xs">

@@ -2,40 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Clock, CheckCircle2, XCircle, FilePlus, Trash2 } from "lucide-react";
+import BackButton from "@/_components/BackButton";
 
 export default function OwnerLogs() {
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
-    // Fetch logs from Mock DB
+    // Fetch logs from localStorage
     const savedLogs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
-
-    if (savedLogs.length === 0) {
-      // Provide some initial dummy logs if empty so it doesn't look totally blank initially
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLogs([
-        {
-          id: 1,
-          action: "Approved by Ministry",
-          target: "Sample Agricultural Plot",
-          date: new Date(Date.now() - 86400000).toISOString(),
-        },
-        {
-          id: 2,
-          action: "Submitted new listing",
-          target: "Sample Agricultural Plot",
-          date: new Date(Date.now() - 172800000).toISOString(),
-        },
-        {
-          id: 3,
-          action: "Account verified",
-          target: "Owner Profile",
-          date: new Date(Date.now() - 259200000).toISOString(),
-        },
-      ]);
-    } else {
-      setLogs(savedLogs);
-    }
+    setLogs(savedLogs);
   }, []);
 
   const getIconForAction = (action) => {
@@ -62,8 +37,9 @@ export default function OwnerLogs() {
   };
 
   return (
-    <div className="p-8 md:p-12 max-w-4xl mx-auto">
-      <div className="mb-10">
+    <div className="p-8 md:p-12 max-w-4xl mx-auto">      <div className="mb-6">
+        <BackButton />
+      </div>      <div className="mb-10">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
           Activity Logs
         </h1>

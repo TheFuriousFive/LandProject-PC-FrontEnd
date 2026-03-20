@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { appointmentService } from "../../../lib/api/services";
 import AppointmentRequestCard from "../../_components/AppointmentRequestCard";
+import BackButton from "@/_components/BackButton";
 import { Mail, AlertCircle, Zap } from "lucide-react";
 
 export default function InboxPage() {
@@ -23,8 +24,6 @@ export default function InboxPage() {
           err.response?.data?.message ||
             "Failed to load appointments. Please try again later."
         );
-        // For demo purposes, show sample data if API fails
-        setAppointments(getSampleAppointments());
       } finally {
         setLoading(false);
       }
@@ -32,48 +31,6 @@ export default function InboxPage() {
 
     fetchAppointments();
   }, []);
-
-  const getSampleAppointments = () => [
-    {
-      id: "apt-001",
-      investorName: "John Smith",
-      investorEmail: "john@example.com",
-      investorPhone: "+1-555-0101",
-      investorAvatar: null,
-      propertyTitle: "Riverside Land Plot, 2.5 Acres",
-      propertyLocation: "Downtown New York, NY",
-      appointmentDateTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      appointmentType: "site_visit",
-      notes: "I am very interested in this property and would like to see it in person. Please let me know your availability.",
-      status: "pending",
-    },
-    {
-      id: "apt-002",
-      investorName: "Sarah Johnson",
-      investorEmail: "sarah@example.com",
-      investorPhone: "+1-555-0102",
-      investorAvatar: null,
-      propertyTitle: "Mountain View Estate, 5 Acres",
-      propertyLocation: "Boulder, CO",
-      appointmentDateTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      appointmentType: "discussion",
-      notes: "Would like to discuss the development potential of this land.",
-      status: "pending",
-    },
-    {
-      id: "apt-003",
-      investorName: "Michael Chen",
-      investorEmail: "michael@example.com",
-      investorPhone: "+1-555-0103",
-      investorAvatar: null,
-      propertyTitle: "lakeside Property, 3 Acres",
-      propertyLocation: "Seattle, WA",
-      appointmentDateTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      appointmentType: "site_visit",
-      notes: null,
-      status: "accepted",
-    },
-  ];
 
   const handleAcceptAppointment = async (appointmentId) => {
     try {

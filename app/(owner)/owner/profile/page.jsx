@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { User, Mail, Phone, MapPin, Building, ShieldCheck, Calendar, Users, Briefcase, Home } from "lucide-react";
+import BackButton from "@/_components/BackButton";
 
 export default function OwnerProfile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -33,6 +34,9 @@ export default function OwnerProfile() {
 
   return (
     <div className="p-8 md:p-12 max-w-4xl mx-auto">
+      <div className="mb-6">
+        <BackButton />
+      </div>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">

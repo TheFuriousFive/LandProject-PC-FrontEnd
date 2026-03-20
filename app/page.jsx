@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Header from "./_components/Header";
+import BackButton from "./_components/BackButton";
 import HeroSection from "./(landing)/_components/HeroSection";
 import WhyTerraVest from "./(landing)/_components/Features";
 import CreateAccountPage from "./(auth)/register/signup";
@@ -29,6 +30,9 @@ export default function Home() {
         </a>
       </div>
       <Header />
+      <div className="px-6 py-4">
+        <BackButton />
+      </div>
       <HeroSection />
       <WhyTerraVest />
     </div>

@@ -31,7 +31,7 @@ export default function LandForm({
     console.log(formData);
     setApiError(null);
     try {
-      // Mock submission using localStorage (Backend not connected)
+      // Submission using localStorage (Backend integration pending)
       if (mode === "create") {
         const existingListings = JSON.parse(
           localStorage.getItem("land_listings") || "[]",

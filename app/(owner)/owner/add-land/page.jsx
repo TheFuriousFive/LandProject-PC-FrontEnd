@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, CheckCircle } from "lucide-react";
 import dynamic from "next/dynamic";
+import BackButton from "@/_components/BackButton";
 
 // Dynamically import MDEditor to avoid SSR issues
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
@@ -106,7 +107,7 @@ export default function AddNewLand() {
     setIsSubmitting(true);
 
     setTimeout(() => {
-      // Mock Saving to DB via LocalStorage
+      // Saving to LocalStorage (Backend integration pending)
       const existingListings = JSON.parse(
         localStorage.getItem("land_listings") || "[]",
       );

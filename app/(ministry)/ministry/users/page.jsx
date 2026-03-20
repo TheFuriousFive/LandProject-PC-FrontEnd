@@ -2,45 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { User, Search, Shield, MoreVertical } from "lucide-react";
+import BackButton from "@/_components/BackButton";
 
 export default function UserManagement() {
-  const [users, setUsers] = useState([
-    {
-      id: "usr_1",
-      name: "Alice Johnson",
-      email: "alice@example.com",
-      role: "investor",
-      status: "active",
-      joined: "2026-01-15",
-    },
-    {
-      id: "usr_2",
-      name: "John Doe",
-      email: "john.d@example.com",
-      role: "owner",
-      status: "active",
-      joined: "2026-02-10",
-    },
-    {
-      id: "usr_3",
-      name: "Bob Smith",
-      email: "bob.smith@example.com",
-      role: "owner",
-      status: "suspended",
-      joined: "2025-11-20",
-    },
-    {
-      id: "usr_4",
-      name: "Sarah Connor",
-      email: "s.connor@example.com",
-      role: "investor",
-      status: "active",
-      joined: "2026-03-05",
-    },
-  ]);
+  const [users, setUsers] = useState([]);
 
   return (
     <div className="p-8 md:p-12 max-w-7xl mx-auto">
+      <div className="mb-6">
+        <BackButton />
+      </div>
       <div className="mb-10">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
           User Management

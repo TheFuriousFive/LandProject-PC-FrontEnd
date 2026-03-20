@@ -1,4 +1,5 @@
 import Header from "../../_components/Header";
+import BackButton from "../../_components/BackButton";
 import {
   MapPin,
   Layers,
@@ -57,6 +58,9 @@ export default function ServicesPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <Header />
+      <div className="px-6 py-4">
+        <BackButton />
+      </div>
       <main className="mx-auto max-w-6xl px-6 py-16">
         <header className="text-center mb-14">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900">

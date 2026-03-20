@@ -5,7 +5,6 @@ import {
   Home,
   Compass,
   Heart,
-  MessageSquare,
   Calendar,
   User,
   LogOut,
@@ -31,7 +30,6 @@ export default function InvestorSidebar() {
     { name: "Browse Listings", href: "/investor/browse", icon: Compass },
     { name: "Favorites", href: "/investor/favorites", icon: Heart },
     { name: "Appointment Responses", href: "/investor/appointments", icon: Calendar },
-    { name: "Messages", href: "/investor/messages", icon: MessageSquare },
     { name: "Profile", href: "/investor/profile", icon: User },
   ];
 
