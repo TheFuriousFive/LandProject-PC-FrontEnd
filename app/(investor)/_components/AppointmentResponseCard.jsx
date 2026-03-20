@@ -116,7 +116,7 @@ export default function AppointmentResponseCard({ appointment, onReschedule }) {
           </div>
           <p className="text-sm flex items-center gap-1 opacity-75">
             <MapPin size={16} />
-            {appointment.propertyLocation}
+            {typeof appointment.propertyLocation === 'object' && appointment.propertyLocation !== null ? `${appointment.propertyLocation.city || ''}, ${appointment.propertyLocation.state || ''}` : appointment.propertyLocation}
           </p>
         </div>
         <button

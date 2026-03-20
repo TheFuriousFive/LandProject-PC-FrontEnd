@@ -5,10 +5,14 @@ export const metadata = {
 
 import { Compass, FileText, Heart, MapPin, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import BackButton from "@/_components/BackButton";
 
 export default function InvestorDashboard() {
   return (
     <div className="p-8 md:p-12 max-w-7xl mx-auto">
+      <div className="mb-6">
+        <BackButton />
+      </div>
       <div className="flex justify-between items-end mb-12">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight mb-2">

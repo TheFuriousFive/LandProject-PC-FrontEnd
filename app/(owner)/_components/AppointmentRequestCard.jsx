@@ -165,7 +165,7 @@ export default function AppointmentRequestCard({
           {appointment.propertyLocation && (
             <p className="text-sm text-gray-600 flex items-center space-x-2 mt-2">
               <MapPin size={14} />
-              <span>{appointment.propertyLocation}</span>
+              <span>{typeof appointment.propertyLocation === 'object' && appointment.propertyLocation !== null ? `${appointment.propertyLocation.city || ''}, ${appointment.propertyLocation.state || ''}` : appointment.propertyLocation}</span>
             </p>
           )}
         </div>

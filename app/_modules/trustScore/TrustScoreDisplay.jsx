@@ -53,38 +53,6 @@ export default function TrustScoreDisplay({ listingData }) {
       <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 mb-4">
         <p className="text-sm font-semibold">{recommendation}</p>
       </div>
-
-      {/* Score Breakdown */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
-          <p className="text-xs font-bold opacity-75 mb-1">Documentation</p>
-          <p className="text-lg font-bold">
-            {scoreBreakdown.details.documentation}
-          </p>
-        </div>
-        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
-          <p className="text-xs font-bold opacity-75 mb-1">
-            Owner Verification
-          </p>
-          <p className="text-lg font-bold">
-            {scoreBreakdown.details.ownerVerification}
-          </p>
-        </div>
-        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
-          <p className="text-xs font-bold opacity-75 mb-1">Peer Reviews</p>
-          <p className="text-lg font-bold">
-            {scoreBreakdown.details.peerReviews}
-          </p>
-        </div>
-        <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
-          <p className="text-xs font-bold opacity-75 mb-1">
-            Government Approval
-          </p>
-          <p className="text-lg font-bold">
-            {scoreBreakdown.details.governmentApproval}
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

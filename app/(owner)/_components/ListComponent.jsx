@@ -45,7 +45,7 @@ export default function ListingCard({
             </div>
           </div>
           <p className="text-gray-500 text-sm font-medium">
-            {location} • {area} Acres
+            {typeof location === 'object' && location !== null ? `${location.city || ''}, ${location.state || ''}` : location} • {area} Acres
           </p>
         </div>
 
