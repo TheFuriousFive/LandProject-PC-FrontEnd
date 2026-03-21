@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import BackButton from "@/_components/BackButton";
 import {
   CheckCircle,
   Clock,
@@ -131,8 +130,10 @@ export default function MinistryDashboard() {
                       {approval.title}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {typeof approval.location === 'object' && approval.location !== null ? `${approval.location.city || ''}, ${approval.location.state || ''}` : approval.location} • {approval.acres} acres •{" "}
-                      {approval.price}
+                      {typeof approval.location === "object"
+                        ? approval.location.address || approval.location.city
+                        : approval.location}{" "}
+                      • {approval.acres} acres • {approval.price}
                     </p>
                   </div>
                 </div>

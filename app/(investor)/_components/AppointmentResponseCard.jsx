@@ -16,10 +16,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-export default function AppointmentResponseCard({
-  appointment,
-  onReschedule,
-}) {
+export default function AppointmentResponseCard({ appointment, onReschedule }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showRescheduleForm, setShowRescheduleForm] = useState(false);
@@ -107,7 +104,9 @@ export default function AppointmentResponseCard({
   };
 
   return (
-    <div className={`border rounded-lg p-4 ${getStatusColor(appointment.status)}`}>
+    <div
+      className={`border rounded-lg p-4 ${getStatusColor(appointment.status)}`}
+    >
       {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
@@ -187,12 +186,12 @@ export default function AppointmentResponseCard({
             <div>
               <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                 <MessageSquare size={16} />
-                Owner's Response
+                Owner&apos;s Response
               </h4>
               <div className="space-y-1 text-sm ml-0">
                 {appointment.responseMessage && (
                   <p className="italic border-l-2 pl-2">
-                    "{appointment.responseMessage}"
+                    &quot;{appointment.responseMessage}&quot;
                   </p>
                 )}
                 {appointment.rejectionReason && (

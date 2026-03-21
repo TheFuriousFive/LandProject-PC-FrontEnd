@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { appointmentService } from "../../../lib/api/services";
 import AppointmentRequestCard from "../../_components/AppointmentRequestCard";
-import BackButton from "@/_components/BackButton";
 import { Mail, AlertCircle, Zap } from "lucide-react";
 
 export default function InboxPage() {
@@ -16,14 +14,27 @@ export default function InboxPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await appointmentService.getOwnerInbox();
-        setAppointments(response.data || response || []);
+        let token = "";
+        if (typeof window !== "undefined") {
+          token = localStorage.getItem("token") || "";
+        }
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/appointments/owner/inbox`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        if (!response.ok) throw new Error("Failed to fetch");
+        const data = await response.json();
+        setAppointments(data.data || data || []);
       } catch (err) {
         console.error("Failed to fetch appointments:", err);
         setError(
           err.response?.data?.message ||
-            "Failed to load appointments. Please try again later."
+            "Failed to load appointments. Please try again later.",
         );
+        // For demo purposes, show sample data if API fails
+        setAppointments(getSampleAppointments());
       } finally {
         setLoading(false);
       }
@@ -32,13 +43,77 @@ export default function InboxPage() {
     fetchAppointments();
   }, []);
 
+  const getSampleAppointments = () => [
+    {
+      id: "apt-001",
+      investorName: "John Smith",
+      investorEmail: "john@example.com",
+      investorPhone: "+1-555-0101",
+      investorAvatar: null,
+      propertyTitle: "Riverside Land Plot, 2.5 Acres",
+      propertyLocation: "Downtown New York, NY",
+      appointmentDateTime: new Date(
+        Date.now() + 2 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      appointmentType: "site_visit",
+      notes:
+        "I am very interested in this property and would like to see it in person. Please let me know your availability.",
+      status: "pending",
+    },
+    {
+      id: "apt-002",
+      investorName: "Sarah Johnson",
+      investorEmail: "sarah@example.com",
+      investorPhone: "+1-555-0102",
+      investorAvatar: null,
+      propertyTitle: "Mountain View Estate, 5 Acres",
+      propertyLocation: "Boulder, CO",
+      appointmentDateTime: new Date(
+        Date.now() + 5 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      appointmentType: "discussion",
+      notes: "Would like to discuss the development potential of this land.",
+      status: "pending",
+    },
+    {
+      id: "apt-003",
+      investorName: "Michael Chen",
+      investorEmail: "michael@example.com",
+      investorPhone: "+1-555-0103",
+      investorAvatar: null,
+      propertyTitle: "lakeside Property, 3 Acres",
+      propertyLocation: "Seattle, WA",
+      appointmentDateTime: new Date(
+        Date.now() - 3 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      appointmentType: "site_visit",
+      notes: null,
+      status: "accepted",
+    },
+  ];
+
   const handleAcceptAppointment = async (appointmentId) => {
     try {
-      await appointmentService.acceptAppointment(appointmentId);
+      let token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") || ""
+          : "";
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/appointments/${appointmentId}/accept`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (!res.ok) throw new Error("Failed");
+
       setAppointments(
         appointments.map((apt) =>
-          apt.id === appointmentId ? { ...apt, status: "accepted" } : apt
-        )
+          apt.id === appointmentId ? { ...apt, status: "accepted" } : apt,
+        ),
       );
     } catch (err) {
       console.error("Failed to accept appointment:", err);
@@ -48,11 +123,26 @@ export default function InboxPage() {
 
   const handleRejectAppointment = async (appointmentId) => {
     try {
-      await appointmentService.rejectAppointment(appointmentId);
+      let token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") || ""
+          : "";
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/appointments/${appointmentId}/reject`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (!res.ok) throw new Error("Failed");
+
       setAppointments(
         appointments.map((apt) =>
-          apt.id === appointmentId ? { ...apt, status: "rejected" } : apt
-        )
+          apt.id === appointmentId ? { ...apt, status: "rejected" } : apt,
+        ),
       );
     } catch (err) {
       console.error("Failed to reject appointment:", err);
@@ -62,11 +152,26 @@ export default function InboxPage() {
 
   const handleRescheduleAppointment = async (appointmentId, rescheduleData) => {
     try {
-      await appointmentService.rescheduleAppointment(
-        appointmentId,
-        rescheduleData.newDateTime,
-        rescheduleData.reason
+      let token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") || ""
+          : "";
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/appointments/${appointmentId}/reschedule`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            newDateTime: rescheduleData.newDateTime,
+            reason: rescheduleData.reason,
+          }),
+        },
       );
+      if (!res.ok) throw new Error("Failed");
+
       setAppointments(
         appointments.map((apt) =>
           apt.id === appointmentId
@@ -75,8 +180,8 @@ export default function InboxPage() {
                 status: "rescheduled",
                 appointmentDateTime: rescheduleData.newDateTime,
               }
-            : apt
-        )
+            : apt,
+        ),
       );
     } catch (err) {
       console.error("Failed to reschedule appointment:", err);
@@ -105,7 +210,8 @@ export default function InboxPage() {
           <h1 className="text-3xl font-bold text-gray-900">Inbox</h1>
         </div>
         <p className="text-gray-600">
-          Manage appointment requests from investors interested in your properties
+          Manage appointment requests from investors interested in your
+          properties
         </p>
       </div>
 
@@ -114,7 +220,9 @@ export default function InboxPage() {
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">Total Requests</p>
+              <p className="text-sm text-gray-600 font-medium">
+                Total Requests
+              </p>
               <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
             </div>
             <Zap size={24} className="text-blue-600 opacity-50" />
@@ -124,7 +232,9 @@ export default function InboxPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 font-medium">Pending</p>
-              <p className="text-2xl font-bold text-orange-600">{stats.pending}</p>
+              <p className="text-2xl font-bold text-orange-600">
+                {stats.pending}
+              </p>
             </div>
             <AlertCircle size={24} className="text-orange-600 opacity-50" />
           </div>
@@ -133,7 +243,9 @@ export default function InboxPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 font-medium">Accepted</p>
-              <p className="text-2xl font-bold text-green-600">{stats.accepted}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {stats.accepted}
+              </p>
             </div>
             <Zap size={24} className="text-green-600 opacity-50" />
           </div>
@@ -142,7 +254,9 @@ export default function InboxPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 font-medium">Rejected</p>
-              <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+              <p className="text-2xl font-bold text-red-600">
+                {stats.rejected}
+              </p>
             </div>
             <AlertCircle size={24} className="text-red-600 opacity-50" />
           </div>
@@ -204,7 +318,8 @@ export default function InboxPage() {
               : `No ${filter} appointments`}
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            Investors will send requests when they're interested in your properties
+            Investors will send requests when they&apos;e interested in your
+            properties
           </p>
         </div>
       )}

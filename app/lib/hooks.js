@@ -3,7 +3,9 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { APIError, getErrorMessage } from "./api/client";
+
+const getErrorMessage = (err) =>
+  err?.response?.data?.message || err?.message || "An error occurred";
 
 /**
  * useAsync: Handle async operations with loading and error states
@@ -334,7 +336,11 @@ export function useApi(apiFunction) {
   return { data, loading, error, execute };
 }
 export function useAuth() {
-  const [user, setUser] = useState({ role: typeof window !== 'undefined' ? localStorage.getItem('userRole') || 'investor' : 'investor' });
+  const [user, setUser] = useState({
+    role:
+      typeof window !== "undefined"
+        ? localStorage.getItem("userRole") || "investor"
+        : "investor",
+  });
   return { user };
 }
-

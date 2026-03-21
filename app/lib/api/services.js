@@ -1,212 +1,228 @@
-import { API_ENDPOINTS } from "./config";
-import { apiGet, apiPost, apiPut, apiDelete } from "./client";
+﻿import { API_ENDPOINTS } from "./config";
 
-/**
- * Authentication Service
- */
-export const authService = {
-  login: (email, password) =>
-    apiPost(API_ENDPOINTS.AUTH.LOGIN, { email, password }),
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-  signup: (userData) => apiPost(API_ENDPOINTS.AUTH.SIGNUP, userData),
+// -------------------- HEADERS --------------------
+function getHeaders(isFormData = false) {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("token") || localStorage.getItem("authToken")
+      : null;
 
-  logout: () => apiPost(API_ENDPOINTS.AUTH.LOGOUT),
+  const headers = {};
 
-  refreshToken: () => apiPost(API_ENDPOINTS.AUTH.REFRESH),
-
-  verifyEmail: (token) => apiPost(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token }),
-};
-
-/**
- * Properties Service
- */
-export const propertyService = {
-  listProperties: (filters = {}) =>
-    apiGet(API_ENDPOINTS.PROPERTIES.LIST, {
-      params: new URLSearchParams(filters),
-    }),
-
-  getProperty: (id) => apiGet(API_ENDPOINTS.PROPERTIES.GET_ONE(id)),
-
-  createProperty: (propertyData) =>
-    apiPost(API_ENDPOINTS.PROPERTIES.CREATE, propertyData),
-
-  updateProperty: (id, propertyData) =>
-    apiPut(API_ENDPOINTS.PROPERTIES.UPDATE(id), propertyData),
-
-  deleteProperty: (id) => apiDelete(API_ENDPOINTS.PROPERTIES.DELETE(id)),
-
-  searchProperties: (query, filters = {}) =>
-    apiGet(API_ENDPOINTS.PROPERTIES.SEARCH, {
-      params: new URLSearchParams({ q: query, ...filters }),
-    }),
-
-  getPropertiesByOwner: (ownerId) =>
-    apiGet(API_ENDPOINTS.PROPERTIES.BY_OWNER(ownerId)),
-};
-
-/**
- * Reviews Service
- */
-export const reviewService = {
-  getReviews: (propertyId) => apiGet(API_ENDPOINTS.REVIEWS.LIST(propertyId)),
-
-  createReview: (propertyId, reviewData) =>
-    apiPost(API_ENDPOINTS.REVIEWS.CREATE(propertyId), reviewData),
-
-  updateReview: (propertyId, reviewId, reviewData) =>
-    apiPut(API_ENDPOINTS.REVIEWS.UPDATE(propertyId, reviewId), reviewData),
-
-  deleteReview: (propertyId, reviewId) =>
-    apiDelete(API_ENDPOINTS.REVIEWS.DELETE(propertyId, reviewId)),
-};
-
-/**
- * Trust Score Service
- */
-export const trustScoreService = {
-  calculateScore: (propertyId, scoreData) =>
-    apiPost(API_ENDPOINTS.TRUST_SCORE.CALCULATE(propertyId), scoreData),
-
-  getScore: (propertyId) => apiGet(API_ENDPOINTS.TRUST_SCORE.GET(propertyId)),
-};
-
-/**
- * Hazard Analysis Service
- */
-export const hazardService = {
-  analyze: (location) => apiPost(API_ENDPOINTS.HAZARD.ANALYZE, location),
-
-  getHazardData: (propertyId) => apiGet(API_ENDPOINTS.HAZARD.GET(propertyId)),
-
-  getLocationHazards: (lat, lon) =>
-    apiGet(API_ENDPOINTS.HAZARD.LOCATIONS, {
-      params: new URLSearchParams({ lat, lon }),
-    }),
-};
-
-/**
- * Documents Service
- */
-export const documentService = {
-  uploadDocument: (propertyId, file, documentType) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", documentType);
-    formData.append("propertyId", propertyId);
-    return apiPost(API_ENDPOINTS.DOCUMENTS.UPLOAD, formData);
-  },
-
-  getDocuments: (propertyId) => apiGet(API_ENDPOINTS.DOCUMENTS.GET(propertyId)),
-
-  deleteDocument: (documentId) =>
-    apiDelete(API_ENDPOINTS.DOCUMENTS.DELETE(documentId)),
-};
-
-/**
- * Geospatial Service
- */
-export const geospatialService = {
-  getNearby: (lat, lon, radius = 5) =>
-    apiGet(API_ENDPOINTS.GEOSPATIAL.NEARBY, {
-      params: new URLSearchParams({ lat, lon, radius }),
-    }),
-
-  calculateDistance: (lat1, lon1, lat2, lon2) =>
-    apiGet(API_ENDPOINTS.GEOSPATIAL.DISTANCE, {
-      params: new URLSearchParams({ lat1, lon1, lat2, lon2 }),
-    }),
-
-  getAccessibility: (lat, lon) =>
-    apiGet(API_ENDPOINTS.GEOSPATIAL.ACCESSIBILITY(lat, lon)),
-};
-
-/**
- * Users Service
- */
-export const userService = {
-  getProfile: () => apiGet(API_ENDPOINTS.USERS.GET_PROFILE),
-
-  updateProfile: (userData) =>
-    apiPut(API_ENDPOINTS.USERS.UPDATE_PROFILE, userData),
-
-  getUserById: (id) => apiGet(API_ENDPOINTS.USERS.GET_BY_ID(id)),
-};
-
-/**
- * Ministry Approvals Service
- */
-export const approvalService = {
-  getPendingApprovals: () => apiGet(API_ENDPOINTS.APPROVALS.PENDING),
-
-  approveProperty: (propertyId, adminNotes = "") =>
-    apiPost(API_ENDPOINTS.APPROVALS.APPROVE(propertyId), { adminNotes }),
-
-  rejectProperty: (propertyId, reason = "") =>
-    apiPost(API_ENDPOINTS.APPROVALS.REJECT(propertyId), { reason }),
-};
-
-/**
- * Appointments Service
- */
-export const appointmentService = {
-  getOwnerInbox: () => apiGet(API_ENDPOINTS.APPOINTMENTS.GET_OWNER_INBOX),
-
-  getInvestorResponses: (filters = {}) =>
-    apiGet(API_ENDPOINTS.APPOINTMENTS.GET_INVESTOR_RESPONSES, {
-      params: new URLSearchParams(filters),
-    }),
-
-  getAllAppointments: (filters = {}) =>
-    apiGet(API_ENDPOINTS.APPOINTMENTS.LIST, {
-      params: new URLSearchParams(filters),
-    }),
-
-  getAppointment: (id) => apiGet(API_ENDPOINTS.APPOINTMENTS.GET_ONE(id)),
-
-  createAppointment: (appointmentData) =>
-    apiPost(API_ENDPOINTS.APPOINTMENTS.CREATE, appointmentData),
-
-  acceptAppointment: (id, notes = "") =>
-    apiPost(API_ENDPOINTS.APPOINTMENTS.ACCEPT(id), { notes }),
-
-  rejectAppointment: (id, reason = "") =>
-    apiPost(API_ENDPOINTS.APPOINTMENTS.REJECT(id), { reason }),
-
-  rescheduleAppointment: (id, newDateTime, reason = "") =>
-    apiPost(API_ENDPOINTS.APPOINTMENTS.RESCHEDULE(id), {
-      newDateTime,
-      reason,
-    }),
-
-  requestReschedule: (id, rescheduleData) =>
-    apiPost(API_ENDPOINTS.APPOINTMENTS.REQUEST_RESCHEDULE(id), rescheduleData),
-
-  cancelAppointment: (id, reason = "") =>
-    apiPost(API_ENDPOINTS.APPOINTMENTS.CANCEL(id), { reason }),
-};
-
-// services/ownerService.js
-
-export async function createLandListing(formData) {
-  const token = localStorage.getItem("token"); // or however you store your JWT
-
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/landapp/owners/listings`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(formData),
-    },
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || "Failed to create listing");
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
   }
 
-  return await response.text(); // backend returns a plain string, not JSON
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return headers;
 }
+
+// -------------------- HELPER --------------------
+async function handleResponse(response, errorMessage) {
+  if (!response.ok) {
+    throw new Error((await response.text()) || errorMessage);
+  }
+  return response.json();
+}
+
+// -------------------- AUTH --------------------
+export const login = (email, password) =>
+  fetch(`${API_BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ email, password }),
+  }).then((res) => handleResponse(res, "Login failed"));
+
+export const signup = (data) =>
+  fetch(`${API_BASE_URL}/auth/signup`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  }).then((res) => handleResponse(res, "Signup failed"));
+
+export const logout = () =>
+  fetch(`${API_BASE_URL}/auth/logout`, {
+    method: "POST",
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Logout failed"));
+
+export const refreshToken = () =>
+  fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Refresh failed"));
+
+export const verifyEmail = (token) =>
+  fetch(`${API_BASE_URL}/auth/verify-email`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ token }),
+  }).then((res) => handleResponse(res, "Verification failed"));
+
+// -------------------- PROPERTIES --------------------
+export const listProperties = (filters = {}) => {
+  const params = new URLSearchParams(filters).toString();
+  return fetch(`${API_BASE_URL}/properties?${params}`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Fetch properties failed"));
+};
+
+export const getProperty = (id) =>
+  fetch(`${API_BASE_URL}/properties/${id}`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Fetch property failed"));
+
+export const createProperty = (data) =>
+  fetch(`${API_BASE_URL}/properties`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  }).then((res) => handleResponse(res, "Create property failed"));
+
+export const updateProperty = (id, data) =>
+  fetch(`${API_BASE_URL}/properties/${id}`, {
+    method: "PUT",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  }).then((res) => handleResponse(res, "Update failed"));
+
+export const deleteProperty = (id) =>
+  fetch(`${API_BASE_URL}/properties/${id}`, {
+    method: "DELETE",
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Delete failed"));
+
+export const searchProperties = (query, filters = {}) => {
+  const params = new URLSearchParams({ q: query, ...filters }).toString();
+  return fetch(`${API_BASE_URL}/properties/search?${params}`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Search failed"));
+};
+
+// -------------------- REVIEWS --------------------
+export const getReviews = (propertyId) =>
+  fetch(`${API_BASE_URL}/properties/${propertyId}/reviews`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Fetch reviews failed"));
+
+export const createReview = (propertyId, data) =>
+  fetch(`${API_BASE_URL}/properties/${propertyId}/reviews`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  }).then((res) => handleResponse(res, "Create review failed"));
+
+export const updateReview = (propertyId, reviewId, data) =>
+  fetch(`${API_BASE_URL}/properties/${propertyId}/reviews/${reviewId}`, {
+    method: "PUT",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  }).then((res) => handleResponse(res, "Update review failed"));
+
+export const deleteReview = (propertyId, reviewId) =>
+  fetch(`${API_BASE_URL}/properties/${propertyId}/reviews/${reviewId}`, {
+    method: "DELETE",
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Delete review failed"));
+
+// -------------------- DOCUMENTS --------------------
+export const uploadDocument = (propertyId, file, type) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("type", type);
+
+  return fetch(`${API_BASE_URL}/properties/${propertyId}/documents`, {
+    method: "POST",
+    headers: getHeaders(true),
+    body: formData,
+  }).then((res) => handleResponse(res, "Upload failed"));
+};
+
+export const getDocuments = (propertyId) =>
+  fetch(`${API_BASE_URL}/properties/${propertyId}/documents`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Fetch documents failed"));
+
+export const deleteDocument = (id) =>
+  fetch(`${API_BASE_URL}/documents/${id}`, {
+    method: "DELETE",
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Delete document failed"));
+
+// -------------------- USERS --------------------
+export const getProfile = () =>
+  fetch(`${API_BASE_URL}/users/me`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Fetch profile failed"));
+
+export const updateProfile = (data) =>
+  fetch(`${API_BASE_URL}/users/me`, {
+    method: "PUT",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  }).then((res) => handleResponse(res, "Update profile failed"));
+
+export const getUserById = (id) =>
+  fetch(`${API_BASE_URL}/users/${id}`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Fetch user failed"));
+
+// -------------------- GEO --------------------
+export const getNearby = (lat, lon, radius = 5) => {
+  const params = new URLSearchParams({ lat, lon, radius }).toString();
+  return fetch(`${API_BASE_URL}/geo/nearby?${params}`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Nearby failed"));
+};
+
+export const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const params = new URLSearchParams({ lat1, lon1, lat2, lon2 }).toString();
+  return fetch(`${API_BASE_URL}/geo/distance?${params}`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Distance failed"));
+};
+
+// -------------------- APPOINTMENTS --------------------
+export const createAppointment = (data) =>
+  fetch(`${API_BASE_URL}/appointments`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  }).then((res) => handleResponse(res, "Create appointment failed"));
+
+export const getAppointments = () =>
+  fetch(`${API_BASE_URL}/appointments`, {
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Fetch appointments failed"));
+
+export const updateAppointment = (id, data) =>
+  fetch(`${API_BASE_URL}/appointments/${id}`, {
+    method: "PUT",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  }).then((res) => handleResponse(res, "Update appointment failed"));
+
+export const deleteAppointment = (id) =>
+  fetch(`${API_BASE_URL}/appointments/${id}`, {
+    method: "DELETE",
+    headers: getHeaders(),
+  }).then((res) => handleResponse(res, "Delete appointment failed"));
+
+// -------------------- LAND LISTINGS --------------------
+export const createLandListing = async (formData) => {
+  const response = await fetch(`${API_BASE_URL}/landapp/owners/listings`, {
+    method: "POST",
+    headers: getHeaders(true),
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error((await response.text()) || "Failed to create land listing");
+  }
+  return response.text();
+};
