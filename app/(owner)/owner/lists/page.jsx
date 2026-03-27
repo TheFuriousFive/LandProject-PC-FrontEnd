@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Edit2, Trash2, Eye } from "lucide-react";
+import { Plus, Edit2, Trash2, Eye, BadgeCheck } from "lucide-react";
 import ConfirmModal from "../../_components/ConfirmModal";
 import EditModal from "../../_components/EditModal";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+const SOLD_LISTING_STORAGE_KEY = "owner_sold_listing_ids";
 
 export default function MyAds() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sellingId, setSellingId] = useState(null);
+  const [isUsingMockData, setIsUsingMockData] = useState(false);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
@@ -19,6 +22,48 @@ export default function MyAds() {
   const [listingToEdit, setListingToEdit] = useState(null);
 
   // ---------------- FETCH ----------------
+  const getSoldListingIds = () => {
+    try {
+      return JSON.parse(localStorage.getItem(SOLD_LISTING_STORAGE_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  };
+
+  const getMockListings = () => {
+    const soldIds = getSoldListingIds();
+    const sample = [
+      {
+        id: "mock-001",
+        title: "Green Valley Farm Plot",
+        area: 4.2,
+        location: "Nakuru County",
+        price: "$120,000",
+        status: "approved",
+      },
+      {
+        id: "mock-002",
+        title: "Lakeside Investment Land",
+        area: 7.5,
+        location: "Kisumu County",
+        price: "$275,000",
+        status: "pending",
+      },
+      {
+        id: "mock-003",
+        title: "Town Edge Commercial Parcel",
+        area: 2.1,
+        location: "Kiambu County",
+        price: "$185,000",
+        status: "rejected",
+      },
+    ];
+
+    return sample.map((listing) =>
+      soldIds.includes(listing.id) ? { ...listing, status: "sold" } : listing,
+    );
+  };
+
   const fetchListings = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -33,10 +78,26 @@ export default function MyAds() {
       if (!response.ok) throw new Error("Failed to fetch listings");
 
       const data = await response.json();
-      setListings(data);
+      const soldIds = getSoldListingIds();
+      const normalized = (Array.isArray(data) ? data : []).map((listing) => {
+        if (soldIds.includes(listing.id)) {
+          return { ...listing, status: "sold" };
+        }
+        return listing;
+      });
+
+      if (normalized.length === 0) {
+        setListings(getMockListings());
+        setIsUsingMockData(true);
+      } else {
+        setListings(normalized);
+        setIsUsingMockData(false);
+      }
       console.log(data);
     } catch (err) {
       console.error(err);
+      setListings(getMockListings());
+      setIsUsingMockData(true);
     } finally {
       setLoading(false);
     }
@@ -93,9 +154,40 @@ export default function MyAds() {
     fetchListings();
   };
 
+  const markAsSold = (id) => {
+    if (!id) return;
+
+    setSellingId(id);
+    try {
+      const existingIds = getSoldListingIds();
+      if (!existingIds.includes(id)) {
+        localStorage.setItem(
+          SOLD_LISTING_STORAGE_KEY,
+          JSON.stringify([...existingIds, id]),
+        );
+      }
+
+      setListings((prev) =>
+        prev.map((listing) =>
+          listing.id === id ? { ...listing, status: "sold" } : listing,
+        ),
+      );
+    } finally {
+      setSellingId(null);
+    }
+  };
+
   // ---------------- STATUS UI ----------------
   const getStatusBadge = (status) => {
-    switch (status) {
+    const normalizedStatus = String(status || "").toLowerCase();
+
+    switch (normalizedStatus) {
+      case "sold":
+        return (
+          <span className="px-3 py-1 bg-slate-800 text-white rounded-full text-xs font-bold uppercase">
+            Sold
+          </span>
+        );
       case "approved":
         return (
           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase">
@@ -143,6 +235,12 @@ export default function MyAds() {
         </div>
 
         <div className="bg-white border rounded-2xl overflow-hidden shadow-sm">
+          {isUsingMockData && (
+            <div className="px-6 py-3 text-sm bg-blue-50 text-blue-800 border-b border-blue-100">
+              Showing demo listings because no live data was found. You can test the Mark Sold button here.
+            </div>
+          )}
+
           {listings.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
               No listings found
@@ -185,6 +283,23 @@ export default function MyAds() {
 
                         <button onClick={() => initiateDelete(land.id)}>
                           <Trash2 size={18} />
+                        </button>
+
+                        <button
+                          onClick={() => markAsSold(land.id)}
+                          disabled={String(land.status || "").toLowerCase() === "sold" || sellingId === land.id}
+                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md border ${
+                            String(land.status || "").toLowerCase() === "sold"
+                              ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
+                              : "bg-slate-900 text-white border-slate-900 hover:bg-slate-700"
+                          }`}
+                        >
+                          <BadgeCheck size={14} />
+                          {sellingId === land.id
+                            ? "Saving..."
+                            : String(land.status || "").toLowerCase() === "sold"
+                              ? "Sold"
+                              : "Mark Sold"}
                         </button>
                       </div>
                     </td>

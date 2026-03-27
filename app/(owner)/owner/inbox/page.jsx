@@ -1,16 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import AppointmentRequestCard from "../../_components/AppointmentRequestCard";
-import { Mail, AlertCircle, Zap } from "lucide-react";
+import { Mail, AlertCircle, User, Phone, MapPin, FileText } from "lucide-react";
 
 export default function InboxPage() {
-  const [appointments, setAppointments] = useState([]);
+  const [inboxItems, setInboxItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("all"); // all, pending, accepted, rejected
+  const [contactConfirmations, setContactConfirmations] = useState({});
 
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const fetchInbox = async () => {
       try {
         setLoading(true);
         setError(null);
@@ -26,179 +25,89 @@ export default function InboxPage() {
         );
         if (!response.ok) throw new Error("Failed to fetch");
         const data = await response.json();
-        setAppointments(data.data || data || []);
+        const rawItems = data.data || data || [];
+        const normalized = rawItems.map((item) => ({
+          id: item.id,
+          investorName: item.investorName || item.investor_name || "Unknown Investor",
+          investorEmail: item.investorEmail || item.investor_email || "N/A",
+          investorPhone: item.investorPhone || item.investor_phone || "N/A",
+          adTitle:
+            item.propertyTitle || item.adTitle || item.listingTitle || "Untitled Ad",
+          adLocation:
+            item.propertyLocation || item.adLocation || item.listingLocation || "N/A",
+          adPrice: item.price || item.adPrice || item.listingPrice || null,
+          message: item.notes || item.message || "",
+        }));
+        setInboxItems(normalized);
       } catch (err) {
-        console.error("Failed to fetch appointments:", err);
+        console.error("Failed to fetch inbox:", err);
         setError(
           err.response?.data?.message ||
-            "Failed to load appointments. Please try again later.",
+            "Failed to load inbox. Please try again later.",
         );
-        // For demo purposes, show sample data if API fails
-        setAppointments(getSampleAppointments());
+        // Fallback data for local demo mode.
+        setInboxItems(getSampleInboxItems());
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAppointments();
+    fetchInbox();
   }, []);
 
-  const getSampleAppointments = () => [
+  const getSampleInboxItems = () => [
     {
-      id: "apt-001",
+      id: "msg-001",
       investorName: "John Smith",
       investorEmail: "john@example.com",
       investorPhone: "+1-555-0101",
-      investorAvatar: null,
-      propertyTitle: "Riverside Land Plot, 2.5 Acres",
-      propertyLocation: "Downtown New York, NY",
-      appointmentDateTime: new Date(
-        Date.now() + 2 * 24 * 60 * 60 * 1000,
-      ).toISOString(),
-      appointmentType: "site_visit",
-      notes:
-        "I am very interested in this property and would like to see it in person. Please let me know your availability.",
-      status: "pending",
+      adTitle: "Riverside Land Plot, 2.5 Acres",
+      adLocation: "Downtown New York, NY",
+      adPrice: 125000,
+      message: "Interested in this ad. Please share ownership and survey details.",
     },
     {
-      id: "apt-002",
+      id: "msg-002",
       investorName: "Sarah Johnson",
       investorEmail: "sarah@example.com",
       investorPhone: "+1-555-0102",
-      investorAvatar: null,
-      propertyTitle: "Mountain View Estate, 5 Acres",
-      propertyLocation: "Boulder, CO",
-      appointmentDateTime: new Date(
-        Date.now() + 5 * 24 * 60 * 60 * 1000,
-      ).toISOString(),
-      appointmentType: "discussion",
-      notes: "Would like to discuss the development potential of this land.",
-      status: "pending",
+      adTitle: "Mountain View Estate, 5 Acres",
+      adLocation: "Boulder, CO",
+      adPrice: 295000,
+      message: "Can you confirm zoning status and nearest road access?",
     },
     {
-      id: "apt-003",
+      id: "msg-003",
       investorName: "Michael Chen",
       investorEmail: "michael@example.com",
       investorPhone: "+1-555-0103",
-      investorAvatar: null,
-      propertyTitle: "lakeside Property, 3 Acres",
-      propertyLocation: "Seattle, WA",
-      appointmentDateTime: new Date(
-        Date.now() - 3 * 24 * 60 * 60 * 1000,
-      ).toISOString(),
-      appointmentType: "site_visit",
-      notes: null,
-      status: "accepted",
+      adTitle: "Lakeside Property, 3 Acres",
+      adLocation: "Seattle, WA",
+      adPrice: 210000,
+      message: "I want to know if the title deed is available for review.",
     },
   ];
 
-  const handleAcceptAppointment = async (appointmentId) => {
-    try {
-      let token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("token") || ""
-          : "";
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/appointments/${appointmentId}/accept`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-      if (!res.ok) throw new Error("Failed");
+  const totalMessages = inboxItems.length;
 
-      setAppointments(
-        appointments.map((apt) =>
-          apt.id === appointmentId ? { ...apt, status: "accepted" } : apt,
-        ),
-      );
-    } catch (err) {
-      console.error("Failed to accept appointment:", err);
-      setError("Failed to accept appointment. Please try again.");
+  const formatPrice = (price) => {
+    if (typeof price === "number") {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(price);
     }
+    return price || "Price not provided";
   };
 
-  const handleRejectAppointment = async (appointmentId) => {
-    try {
-      let token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("token") || ""
-          : "";
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/appointments/${appointmentId}/reject`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-      if (!res.ok) throw new Error("Failed");
-
-      setAppointments(
-        appointments.map((apt) =>
-          apt.id === appointmentId ? { ...apt, status: "rejected" } : apt,
-        ),
-      );
-    } catch (err) {
-      console.error("Failed to reject appointment:", err);
-      setError("Failed to reject appointment. Please try again.");
-    }
-  };
-
-  const handleRescheduleAppointment = async (appointmentId, rescheduleData) => {
-    try {
-      let token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("token") || ""
-          : "";
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/appointments/${appointmentId}/reschedule`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            newDateTime: rescheduleData.newDateTime,
-            reason: rescheduleData.reason,
-          }),
-        },
-      );
-      if (!res.ok) throw new Error("Failed");
-
-      setAppointments(
-        appointments.map((apt) =>
-          apt.id === appointmentId
-            ? {
-                ...apt,
-                status: "rescheduled",
-                appointmentDateTime: rescheduleData.newDateTime,
-              }
-            : apt,
-        ),
-      );
-    } catch (err) {
-      console.error("Failed to reschedule appointment:", err);
-      setError("Failed to reschedule appointment. Please try again.");
-    }
-  };
-
-  const filteredAppointments = appointments.filter((apt) => {
-    if (filter === "all") return true;
-    return apt.status === filter;
-  });
-
-  const stats = {
-    total: appointments.length,
-    pending: appointments.filter((apt) => apt.status === "pending").length,
-    accepted: appointments.filter((apt) => apt.status === "accepted").length,
-    rejected: appointments.filter((apt) => apt.status === "rejected").length,
+  const markContactConfirmation = (messageId, method) => {
+    setContactConfirmations((prev) => ({
+      ...prev,
+      [messageId]: {
+        method,
+        timestamp: new Date().toLocaleString(),
+      },
+    }));
   };
 
   return (
@@ -210,56 +119,17 @@ export default function InboxPage() {
           <h1 className="text-3xl font-bold text-gray-900">Inbox</h1>
         </div>
         <p className="text-gray-600">
-          Manage appointment requests from investors interested in your
-          properties
+          View investor details and the relevant ad they are interested in.
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 font-medium">
-                Total Requests
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-            <Zap size={24} className="text-blue-600 opacity-50" />
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4 mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-600 font-medium">Total Messages</p>
+            <p className="text-2xl font-bold text-gray-900">{totalMessages}</p>
           </div>
-        </div>
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Pending</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {stats.pending}
-              </p>
-            </div>
-            <AlertCircle size={24} className="text-orange-600 opacity-50" />
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Accepted</p>
-              <p className="text-2xl font-bold text-green-600">
-                {stats.accepted}
-              </p>
-            </div>
-            <Zap size={24} className="text-green-600 opacity-50" />
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Rejected</p>
-              <p className="text-2xl font-bold text-red-600">
-                {stats.rejected}
-              </p>
-            </div>
-            <AlertCircle size={24} className="text-red-600 opacity-50" />
-          </div>
+          <Mail size={24} className="text-blue-600 opacity-60" />
         </div>
       </div>
 
@@ -276,65 +146,142 @@ export default function InboxPage() {
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {[
-          { label: "All", value: "all" },
-          { label: "Pending", value: "pending" },
-          { label: "Accepted", value: "accepted" },
-          { label: "Rejected", value: "rejected" },
-        ].map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setFilter(tab.value)}
-            className={`px-6 py-2 rounded-full font-semibold whitespace-nowrap transition-all ${
-              filter === tab.value
-                ? "bg-[#0f0f11] text-[#9afb21]"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
       {/* Loading State */}
       {loading && (
         <div className="text-center py-12">
           <div className="inline-block">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-          <p className="text-gray-600 mt-4">Loading appointments...</p>
+          <p className="text-gray-600 mt-4">Loading inbox...</p>
         </div>
       )}
 
       {/* Empty State */}
-      {!loading && filteredAppointments.length === 0 && (
+      {!loading && inboxItems.length === 0 && (
         <div className="text-center py-12 bg-gray-50 rounded-xl">
           <Mail size={48} className="mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-600 font-medium">
-            {filter === "all"
-              ? "No appointment requests yet"
-              : `No ${filter} appointments`}
-          </p>
+          <p className="text-gray-600 font-medium">No inbox messages yet</p>
           <p className="text-sm text-gray-500 mt-1">
-            Investors will send requests when they&apos;e interested in your
-            properties
+            Investor messages will appear here when they show interest in your ads.
           </p>
         </div>
       )}
 
-      {/* Appointments List */}
-      {!loading && filteredAppointments.length > 0 && (
+      {/* Inbox List */}
+      {!loading && inboxItems.length > 0 && (
         <div className="space-y-4">
-          {filteredAppointments.map((appointment) => (
-            <AppointmentRequestCard
-              key={appointment.id}
-              appointment={appointment}
-              onAccept={handleAcceptAppointment}
-              onReject={handleRejectAppointment}
-              onReschedule={handleRescheduleAppointment}
-            />
+          {inboxItems.map((item) => (
+            <article
+              key={item.id}
+              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <section className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">
+                    Investor Details
+                  </h2>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <p className="flex items-center gap-2 font-semibold text-gray-900">
+                      <User size={14} /> {item.investorName}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Mail size={14} /> {item.investorEmail}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Phone size={14} /> {item.investorPhone}
+                    </p>
+                  </div>
+                </section>
+
+                <section className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                  <h2 className="text-sm font-bold text-blue-900 uppercase tracking-wide mb-3">
+                    Relevant Ad
+                  </h2>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <p className="flex items-center gap-2 font-semibold text-gray-900">
+                      <FileText size={14} /> {item.adTitle}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <MapPin size={14} />
+                      {typeof item.adLocation === "object" && item.adLocation !== null
+                        ? `${item.adLocation.city || ""}, ${item.adLocation.state || ""}`
+                        : item.adLocation}
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {formatPrice(item.adPrice)}
+                    </p>
+                  </div>
+                </section>
+              </div>
+
+              {item.message && (
+                <div className="mt-4 p-4 bg-white border border-gray-200 rounded-xl">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">
+                    Message
+                  </p>
+                  <p className="text-sm text-gray-700">{item.message}</p>
+                </div>
+              )}
+
+              <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                <a
+                  href={
+                    item.investorEmail && item.investorEmail !== "N/A"
+                      ? `mailto:${item.investorEmail}?subject=${encodeURIComponent("Regarding your land inquiry")}`
+                      : "#"
+                  }
+                  onClick={(e) => {
+                    if (!item.investorEmail || item.investorEmail === "N/A") {
+                      e.preventDefault();
+                      return;
+                    }
+                    markContactConfirmation(item.id, "email");
+                  }}
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    item.investorEmail && item.investorEmail !== "N/A"
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  <Mail size={16} />
+                  Contact via Email
+                </a>
+
+                <a
+                  href={
+                    item.investorPhone && item.investorPhone !== "N/A"
+                      ? `tel:${item.investorPhone}`
+                      : "#"
+                  }
+                  onClick={(e) => {
+                    if (!item.investorPhone || item.investorPhone === "N/A") {
+                      e.preventDefault();
+                      return;
+                    }
+                    markContactConfirmation(item.id, "phone");
+                  }}
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    item.investorPhone && item.investorPhone !== "N/A"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  <Phone size={16} />
+                  Contact via Call
+                </a>
+              </div>
+
+              {contactConfirmations[item.id] && (
+                <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3">
+                  <p className="text-sm font-medium text-green-800">
+                    Confirmation sent via {contactConfirmations[item.id].method === "email" ? "Email" : "Phone Call"}.
+                  </p>
+                  <p className="text-xs text-green-700 mt-1">
+                    Updated: {contactConfirmations[item.id].timestamp}
+                  </p>
+                </div>
+              )}
+            </article>
           ))}
         </div>
       )}

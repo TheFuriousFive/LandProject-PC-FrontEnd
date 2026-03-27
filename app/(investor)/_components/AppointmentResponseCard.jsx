@@ -16,9 +16,14 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-export default function AppointmentResponseCard({ appointment, onReschedule }) {
+export default function AppointmentResponseCard({
+  appointment,
+  onReschedule,
+  onAcknowledgeRead,
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAcknowledging, setIsAcknowledging] = useState(false);
   const [showRescheduleForm, setShowRescheduleForm] = useState(false);
   const [rescheduleData, setRescheduleData] = useState({
     newDateTime: "",
@@ -103,6 +108,21 @@ export default function AppointmentResponseCard({ appointment, onReschedule }) {
     }
   };
 
+  const handleAcknowledgeRead = async () => {
+    if (!appointment?.id) return;
+    setIsAcknowledging(true);
+    try {
+      if (typeof onAcknowledgeRead === "function") {
+        await onAcknowledgeRead(appointment.id);
+      }
+    } catch (error) {
+      console.error("Failed to acknowledge read status:", error);
+      alert("Failed to confirm read status");
+    } finally {
+      setIsAcknowledging(false);
+    }
+  };
+
   return (
     <div
       className={`border rounded-lg p-4 ${getStatusColor(appointment.status)}`}
@@ -160,6 +180,72 @@ export default function AppointmentResponseCard({ appointment, onReschedule }) {
                 </p>
               )}
             </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a
+                href={
+                  appointment.ownerEmail && appointment.ownerEmail !== "N/A"
+                    ? `mailto:${appointment.ownerEmail}`
+                    : "#"
+                }
+                onClick={(e) => {
+                  if (!appointment.ownerEmail || appointment.ownerEmail === "N/A") {
+                    e.preventDefault();
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  appointment.ownerEmail && appointment.ownerEmail !== "N/A"
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                Contact via Email
+              </a>
+
+              <a
+                href={
+                  appointment.ownerPhone && appointment.ownerPhone !== "N/A"
+                    ? `tel:${appointment.ownerPhone}`
+                    : "#"
+                }
+                onClick={(e) => {
+                  if (!appointment.ownerPhone || appointment.ownerPhone === "N/A") {
+                    e.preventDefault();
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  appointment.ownerPhone && appointment.ownerPhone !== "N/A"
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                Contact via Call
+              </a>
+            </div>
+
+            {appointment.ownerContactMethod && (
+              <div className="mt-3 p-2.5 rounded-lg bg-green-50 border border-green-200 text-xs text-green-800">
+                Owner contacted you via {appointment.ownerContactMethod === "phone" ? "Phone Call" : "Email"}
+                {appointment.ownerContactedAt
+                  ? ` on ${new Date(appointment.ownerContactedAt).toLocaleString()}`
+                  : ""}
+                .
+              </div>
+            )}
+
+            {appointment.investorReadConfirmedAt ? (
+              <div className="mt-2 p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800">
+                You confirmed this message was read on {new Date(appointment.investorReadConfirmedAt).toLocaleString()}.
+              </div>
+            ) : (
+              <button
+                onClick={handleAcknowledgeRead}
+                disabled={isAcknowledging}
+                className="mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-900 text-white hover:bg-black disabled:opacity-50"
+              >
+                {isAcknowledging ? "Confirming..." : "Confirm I Read This"}
+              </button>
+            )}
           </div>
 
           {/* Your Request Details */}

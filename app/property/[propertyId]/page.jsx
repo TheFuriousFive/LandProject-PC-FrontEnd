@@ -1,30 +1,22 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import {
-  MapPin,
-  Ruler,
-  DollarSign,
-  User,
-  Phone,
-  Mail,
-  Share2,
-  Heart,
-} from "lucide-react";
+import { Share2, Heart, Star } from "lucide-react";
+import Link from "next/link";
 import LocationMap from "@/_modules/geospatial/LocationMap";
-import HazardOverlay from "@/_modules/hazardData/HazardOverlay";
 import TrustScoreDisplay from "@/_modules/trustScore/TrustScoreDisplay";
 import ReviewSection from "@/_shared/ReviewSection";
 import QASection from "@/_shared/QASection";
-import GeoUtils from "@/_modules/geospatial/mapUtils";
 import PropertyPageHeader from "@/_modules/property/PropertyPageHeader";
-import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/hooks";
+import MDEditor from "@uiw/react-md-editor";
+import ContactInquiryCard from "@/_shared/ContactInquiryCard";
 
 export default function PropertyDetailsPage() {
   const params = useParams();
   const { user } = useAuth();
   console.log(user, "userrrrrrrrrrrrrrrrr");
+
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -79,6 +71,7 @@ export default function PropertyDetailsPage() {
           owner: propertyData.owner || {
             id: "owner-123",
             name: "Unknown Owner",
+            avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
             joinDate: "2023-01-15",
             verified: false,
             phone: "N/A",
@@ -89,6 +82,7 @@ export default function PropertyDetailsPage() {
             kycCompleted: false,
             accountAgeMonths: 0,
           },
+          keywords: propertyData.keywords || [],
           documents: propertyData.documents || [],
           connectivity: propertyData.connectivity || {
             nearbySchools: 0,
@@ -172,79 +166,79 @@ export default function PropertyDetailsPage() {
     );
   }
 
-  // Calculate metrics
-  const locationInsights = GeoUtils.getLocationInsights(property);
+  const avgOwnerRating = property.reviews?.length
+    ? (
+        property.reviews.reduce((sum, review) => sum + review.rating, 0) /
+        property.reviews.length
+      ).toFixed(1)
+    : "0.0";
 
   return (
     <main className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
-        <PropertyPageHeader role={user.role} property={property} />
+        <PropertyPageHeader role={user?.role} property={property} />
+
+        <div className="bg-white border border-gray-200 rounded-2xl px-4 py-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <Link
+              href={`/owners/${property.owner.id}`}
+              className="group flex items-center gap-3 rounded-xl hover:bg-gray-50 p-2 -m-2 transition-colors w-fit"
+            >
+              <img
+                src={property.owner.avatar}
+                alt={property.owner.name}
+                className="w-12 h-12 rounded-full object-cover border border-gray-200"
+              />
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                  Listing Owner
+                </p>
+                <p className="text-lg font-bold text-gray-900 group-hover:underline">
+                  {property.owner.name}
+                </p>
+              </div>
+            </Link>
+
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-4 py-2 w-fit">
+              <Star size={16} className="text-amber-500 fill-amber-500" />
+              <span className="text-sm font-bold text-amber-700">
+                {avgOwnerRating} / 5.0 owner rating
+              </span>
+              <span className="text-xs font-semibold text-amber-600">
+                ({property.reviews.length} reviews)
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* Header with Images */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Main Image */}
-          <div className="lg:col-span-2">
-            <div className="relative rounded-2xl overflow-hidden mb-4 h-96 bg-gray-200">
-              <img
-                src={property.images[0]}
-                alt={property.title}
-                className="w-full h-full object-cover hover:scale-105 transition-transform"
-              />
-              <div className="absolute top-4 right-4 flex gap-2">
-                <button className="bg-white rounded-full p-3 hover:bg-gray-100 shadow-lg">
-                  <Share2 size={20} className="text-gray-700" />
-                </button>
-                <button className="bg-white rounded-full p-3 hover:bg-gray-100 shadow-lg">
-                  <Heart size={20} className="text-gray-700" />
-                </button>
-              </div>
-            </div>
-
-            {/* Gallery */}
-            <div className="grid grid-cols-4 gap-3">
-              {property.images.map((img, idx) => (
-                <img
-                  key={idx}
-                  src={img}
-                  alt={`Property ${idx}`}
-                  className="w-full h-20 object-cover rounded-lg cursor-pointer hover:opacity-75 transition"
-                />
-              ))}
+        <div className="mb-8">
+          <div className="relative rounded-2xl overflow-hidden mb-4 h-96 bg-gray-200">
+            <img
+              src={property.images[0]}
+              alt={property.title}
+              className="w-full h-full object-cover hover:scale-105 transition-transform"
+            />
+            <div className="absolute top-4 right-4 flex gap-2">
+              <button className="bg-white rounded-full p-3 hover:bg-gray-100 shadow-lg">
+                <Share2 size={20} className="text-gray-700" />
+              </button>
+              <button className="bg-white rounded-full p-3 hover:bg-gray-100 shadow-lg">
+                <Heart size={20} className="text-gray-700" />
+              </button>
             </div>
           </div>
 
-          {/* Quick Info Card */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 h-fit">
-            <div className="mb-6">
-              <p className="text-gray-500 text-sm mb-1">Price</p>
-              <p className="text-3xl font-extrabold text-gray-900">
-                ${(property.price / 1000000).toFixed(2)}M
-              </p>
-            </div>
-
-            <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <Ruler size={20} className="text-gray-400" />
-                <div>
-                  <p className="text-xs text-gray-500">Area</p>
-                  <p className="font-bold">{property.area} Acres</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <MapPin size={20} className="text-gray-400" />
-                <div>
-                  <p className="text-xs text-gray-500">Location</p>
-                  <p className="font-bold">{property.location}</p>
-                </div>
-              </div>
-            </div>
-
-            <button className="w-full bg-[#9afb21] text-black hover:bg-[#8aec1b] font-bold py-3 rounded-lg mb-3 transition-colors">
-              Contact Owner
-            </button>
-            <button className="w-full border border-[#9afb21] text-[#9afb21] hover:bg-[#9afb21]/5 font-bold py-3 rounded-lg transition-colors">
-              Make Offer
-            </button>
+          {/* Gallery */}
+          <div className="grid grid-cols-4 gap-3">
+            {property.images.map((img, idx) => (
+              <img
+                key={idx}
+                src={img}
+                alt={`Property ${idx}`}
+                className="w-full h-20 object-cover rounded-lg cursor-pointer hover:opacity-75 transition"
+              />
+            ))}
           </div>
         </div>
 
@@ -252,7 +246,7 @@ export default function PropertyDetailsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Title & Description */}
+            {/* Listing Details, Keywords and Description */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <h1 className="text-3xl font-extrabold text-gray-900 mb-3">
                 {property.title}
@@ -267,9 +261,60 @@ export default function PropertyDetailsPage() {
                   Survey: {property.surveyNumber}
                 </span>
               </div>
-              <p className="text-gray-600 leading-relaxed">
-                {property.description}
-              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+                <div className="bg-gray-50 rounded-lg border border-gray-100 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                    Land Type
+                  </p>
+                  <p className="font-semibold text-gray-900">{property.landType}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg border border-gray-100 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                    Price
+                  </p>
+                  <p className="font-semibold text-gray-900">
+                    ${property.price.toLocaleString()} {property.currency}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-lg border border-gray-100 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                    Area
+                  </p>
+                  <p className="font-semibold text-gray-900">{property.area} Acres</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg border border-gray-100 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+                    Location
+                  </p>
+                  <p className="font-semibold text-gray-900">{property.location}</p>
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">
+                  Keywords
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(property.keywords || []).map((keyword) => (
+                    <span
+                      key={keyword}
+                      className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200"
+                    >
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">
+                  Description
+                </p>
+                <div className="prose prose-sm max-w-none">
+                  <MDEditor.Markdown source={property.description || "No description provided."} />
+                </div>
+              </div>
             </div>
 
             {/* Location Map & Info */}
@@ -278,91 +323,6 @@ export default function PropertyDetailsPage() {
               longitude={property.longitude}
               title={property.title}
             />
-
-            {/* Location Accessibility */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                Location & Accessibility
-              </h3>
-
-              <div className="mb-4">
-                <div className="flex justify-between mb-2">
-                  <span className="font-semibold text-gray-700">
-                    Accessibility Score
-                  </span>
-                  <span className="text-2xl font-extrabold text-blue-600">
-                    {locationInsights.accessibility}
-                  </span>
-                </div>
-                <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500"
-                    style={{ width: `${locationInsights.accessibility}%` }}
-                  />
-                </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  {locationInsights.accessibilityLevel} accessibility
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <p className="text-xs font-bold text-gray-600 mb-1">
-                    Nearby Schools
-                  </p>
-                  <p className="text-2xl font-extrabold text-blue-600">
-                    {locationInsights.nearbySchools}
-                  </p>
-                </div>
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <p className="text-xs font-bold text-gray-600 mb-1">
-                    Hospitals
-                  </p>
-                  <p className="text-2xl font-extrabold text-blue-600">
-                    {locationInsights.nearbyHospitals}
-                  </p>
-                </div>
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <p className="text-xs font-bold text-gray-600 mb-1">
-                    Public Transport
-                  </p>
-                  <p className="text-lg font-extrabold text-blue-600">
-                    {locationInsights.publicTransportDistance} km
-                  </p>
-                </div>
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <p className="text-xs font-bold text-gray-600 mb-1">
-                    Road Quality
-                  </p>
-                  <p className="text-lg font-extrabold text-blue-600 capitalize">
-                    {locationInsights.roadQuality}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={locationInsights.waterAccess}
-                    disabled
-                  />
-                  <span className="text-sm font-semibold text-gray-700">
-                    Water Access
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={locationInsights.electricityAccess}
-                    disabled
-                  />
-                  <span className="text-sm font-semibold text-gray-700">
-                    Electricity Access
-                  </span>
-                </div>
-              </div>
-            </div>
 
             {/* Documents Section */}
             {/* <div className="bg-white rounded-2xl p-6 border border-gray-200">
@@ -412,70 +372,11 @@ export default function PropertyDetailsPage() {
             {/* Trust Score */}
             <TrustScoreDisplay listingData={property} />
 
-            {/* Hazard Assessment */}
-            <HazardOverlay hazardData={property.hazards} />
-
-            {/* Owner Card */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                Property Owner
-              </h3>
-
-              <div className="text-center mb-4">
-                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-[#9afb21] to-green-500 rounded-full flex items-center justify-center mb-3">
-                  <User size={32} className="text-black" />
-                </div>
-                <p className="font-bold text-gray-900">{property.owner.name}</p>
-                <p className="text-sm text-gray-500">
-                  Member since {new Date(property.owner.joinDate).getFullYear()}
-                </p>
-              </div>
-
-              <div className="space-y-2 mb-4 pb-4 border-b border-gray-200">
-                <a
-                  href={`tel:${property.owner.phone}`}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-                >
-                  <Phone size={16} />
-                  <span className="text-sm">{property.owner.phone}</span>
-                </a>
-                <a
-                  href={`mailto:${property.owner.email}`}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-                >
-                  <Mail size={16} />
-                  <span className="text-sm">{property.owner.email}</span>
-                </a>
-              </div>
-
-              <div className="space-y-2 text-sm pt-4">
-                {property.owner.verified && (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <span className="w-2 h-2 bg-green-600 rounded-full" />
-                    Verified Owner
-                  </div>
-                )}
-                {property.owner.idVerified && (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <span className="w-2 h-2 bg-green-600 rounded-full" />
-                    ID Verified
-                  </div>
-                )}
-                {property.owner.kycCompleted && (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <span className="w-2 h-2 bg-green-600 rounded-full" />
-                    KYC Completed
-                  </div>
-                )}
-              </div>
-
-              <button className="w-full mt-4 bg-[#9afb21] text-black hover:bg-[#8aec1b] font-bold py-2 rounded-lg transition-colors text-sm">
-                Message Owner
-              </button>
-            </div>
+            <ContactInquiryCard ownerName={property.owner.name} />
           </div>
         </div>
       </div>
     </main>
   );
 }
+
