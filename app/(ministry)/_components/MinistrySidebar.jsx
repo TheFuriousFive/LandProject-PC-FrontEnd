@@ -5,9 +5,7 @@ import {
   Home,
   CheckCircle,
   Clock,
-  BarChart3,
   Users,
-  Settings,
   LogOut,
 } from "lucide-react";
 
@@ -32,9 +30,7 @@ export default function MinistrySidebar() {
       href: "/ministry/approved",
       icon: CheckCircle,
     },
-    { name: "Analytics", href: "/ministry/analytics", icon: BarChart3 },
     { name: "User Management", href: "/ministry/users", icon: Users },
-    { name: "Settings", href: "/ministry/settings", icon: Settings },
   ];
 
   return (
