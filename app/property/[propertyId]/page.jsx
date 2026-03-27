@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Share2, Heart, Star } from "lucide-react";
 import Link from "next/link";
@@ -71,7 +72,8 @@ export default function PropertyDetailsPage() {
           owner: propertyData.owner || {
             id: "owner-123",
             name: "Unknown Owner",
-            avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
+            avatar:
+              "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
             joinDate: "2023-01-15",
             verified: false,
             phone: "N/A",
@@ -267,7 +269,9 @@ export default function PropertyDetailsPage() {
                   <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
                     Land Type
                   </p>
-                  <p className="font-semibold text-gray-900">{property.landType}</p>
+                  <p className="font-semibold text-gray-900">
+                    {property.landType}
+                  </p>
                 </div>
                 <div className="bg-gray-50 rounded-lg border border-gray-100 p-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
@@ -281,13 +285,17 @@ export default function PropertyDetailsPage() {
                   <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
                     Area
                   </p>
-                  <p className="font-semibold text-gray-900">{property.area} Acres</p>
+                  <p className="font-semibold text-gray-900">
+                    {property.area} Acres
+                  </p>
                 </div>
                 <div className="bg-gray-50 rounded-lg border border-gray-100 p-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
                     Location
                   </p>
-                  <p className="font-semibold text-gray-900">{property.location}</p>
+                  <p className="font-semibold text-gray-900">
+                    {property.location}
+                  </p>
                 </div>
               </div>
 
@@ -312,7 +320,9 @@ export default function PropertyDetailsPage() {
                   Description
                 </p>
                 <div className="prose prose-sm max-w-none">
-                  <MDEditor.Markdown source={property.description || "No description provided."} />
+                  <MDEditor.Markdown
+                    source={property.description || "No description provided."}
+                  />
                 </div>
               </div>
             </div>
@@ -379,4 +389,3 @@ export default function PropertyDetailsPage() {
     </main>
   );
 }
-
