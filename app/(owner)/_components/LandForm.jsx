@@ -207,12 +207,24 @@ export default function LandForm({
 
       const method = mode === "edit" ? "PUT" : "POST";
 
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+
+      let requestBody;
+      
+      // The backend PUT endpoint expects application/json, not multipart/form-data
+      if (mode === "edit") {
+        headers["Content-Type"] = "application/json";
+        requestBody = JSON.stringify(listingPayload);
+      } else {
+        requestBody = submitFormData;
+      }
+
       const response = await fetch(url, {
         method: method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: submitFormData,
+        headers: headers,
+        body: requestBody,
       });
 
       if (!response.ok) {
