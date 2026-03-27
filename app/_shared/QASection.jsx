@@ -1,33 +1,189 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageSquare, Send, Reply } from "lucide-react";
 import { useAuth } from "@/lib/hooks";
 
-export default function QASection({ questions = [], listingId, ownerId }) {
+export default function QASection({ listingId, ownerId }) {
   const { user } = useAuth();
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
   const [newQuestion, setNewQuestion] = useState("");
   const [replyContent, setReplyContent] = useState("");
   const [replyingTo, setReplyTo] = useState(null);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // You can hook these up to the backend fetch API
+  // Fetch Questions
+  const fetchQuestions = async () => {
+    try {
+      setLoadingQuestions(true);
+      const token = (localStorage.getItem("token") || "")
+        .replace(/^"|"$/g, "")
+        .trim();
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/listings/${listingId}/questions`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setQuestions(data || []);
+
+        // Check if questions already have an answer, and prepopulate answers state
+        const initialAnswers = {};
+        data.forEach((q) => {
+          if (q.answer) {
+            initialAnswers[q.id] = [{ content: q.answer }];
+          }
+        });
+        setAnswers((prev) => ({ ...prev, ...initialAnswers }));
+
+        // Fetch answers for all questions (in case they are separated)
+        data.forEach((q) => {
+          if (!q.answer) {
+            fetchAnswers(q.id);
+          }
+        });
+      } else {
+        console.error("Failed to fetch questions");
+      }
+    } catch (err) {
+      console.error("Error fetching questions:", err);
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
+
+  // Fetch Answers for a specific question
+  const fetchAnswers = async (questionId) => {
+    try {
+      const token = (localStorage.getItem("token") || "")
+        .replace(/^"|"$/g, "")
+        .trim();
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/questions/${questionId}/answers`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        // Ensure data is treated as an array even if a single object is returned
+        let answersArray = [];
+        if (Array.isArray(data)) {
+          answersArray = data;
+        } else if (
+          data &&
+          typeof data === "object" &&
+          Object.keys(data).length > 0 &&
+          !data.error
+        ) {
+          if (
+            data.message &&
+            typeof data.message === "string" &&
+            data.message.toLowerCase().includes("not found")
+          ) {
+            answersArray = [];
+          } else {
+            answersArray = [data];
+          }
+        } else if (typeof data === "string") {
+          answersArray = [{ content: data }];
+        }
+        setAnswers((prev) => ({ ...prev, [questionId]: answersArray }));
+      }
+    } catch (err) {
+      console.error("Error fetching answers for question", questionId, err);
+    }
+  };
+
+  useEffect(() => {
+    if (listingId) {
+      fetchQuestions();
+    }
+  }, [listingId]);
+
   const handleAskQuestion = async () => {
     if (!newQuestion.trim()) return;
 
-    // Replace with real API call
-    console.log(`Asking question for listing ${listingId}:`, newQuestion);
+    setIsSubmitting(true);
+    try {
+      const token = (localStorage.getItem("token") || "")
+        .replace(/^"|"$/g, "")
+        .trim();
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/landapp/investors/listings/${listingId}/questions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content: newQuestion.trim(),
+          }),
+        },
+      );
 
-    // Reset state
-    setNewQuestion("");
+      if (res.ok) {
+        setNewQuestion("");
+        // fetchQuestions has been handling state updates, let's keep it
+        fetchQuestions();
+      } else {
+        alert("Failed to post question.");
+      }
+    } catch (err) {
+      console.error("Error posting question:", err);
+      alert("Error posting question.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleAnswerQuestion = async (questionId) => {
     if (!replyContent.trim()) return;
 
-    // Replace with real API call
-    console.log(`Answering question ${questionId}:`, replyContent);
+    setIsSubmitting(true);
+    try {
+      const token = (localStorage.getItem("token") || "")
+        .replace(/^"|"$/g, "")
+        .trim();
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/landapp/owners/questions/${questionId}/answer`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content: replyContent.trim(),
+          }),
+        },
+      );
 
-    // Reset state
-    setReplyContent("");
-    setReplyTo(null);
+      if (res.ok) {
+        setReplyContent("");
+        setReplyTo(null);
+        // Refresh both list of questions to pick up .answer if present,
+        // and fetch answers individually just in case.
+        fetchQuestions();
+        fetchAnswers(questionId);
+      } else {
+        alert("Failed to post answer.");
+      }
+    } catch (err) {
+      console.error("Error posting answer:", err);
+      alert("Error posting answer.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -41,7 +197,11 @@ export default function QASection({ questions = [], listingId, ownerId }) {
 
       {/* Q&A List */}
       <div className="space-y-6 mb-8">
-        {questions.length > 0 ? (
+        {loadingQuestions ? (
+          <div className="text-center py-8 text-gray-500">
+            Loading questions...
+          </div>
+        ) : questions.length > 0 ? (
           questions.map((q) => (
             <div
               key={q.id}
@@ -49,33 +209,54 @@ export default function QASection({ questions = [], listingId, ownerId }) {
             >
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-gray-900">
-                    {q.investorName || "Investor"}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {new Date(q.date).toLocaleDateString()}
-                  </span>
+                  <span className="font-semibold text-gray-900">Question</span>
+                  {q.created_at && (
+                    <span className="text-xs text-gray-500">
+                      {new Date(q.created_at).toLocaleDateString()}
+                    </span>
+                  )}
                 </div>
                 <p className="text-gray-700">{q.content}</p>
               </div>
 
-              {/* Existing Answer */}
-              {q.answer ? (
-                <div className="ml-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-gray-900">
-                      Owner Reply
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(q.answerDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-gray-700">{q.answer}</p>
+              {/* Answers */}
+              {answers[q.id] && answers[q.id].length > 0 ? (
+                <div className="space-y-3 mb-3">
+                  {answers[q.id].map((ans, idx) => (
+                    <div
+                      key={ans.id || idx}
+                      className="ml-8 p-4 bg-gray-50 rounded-xl border border-gray-100"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-gray-900">
+                          {ans.investor_id === ownerId
+                            ? "Owner Reply"
+                            : "Reply"}
+                        </span>
+                        {ans.created_at && (
+                          <span className="text-xs text-gray-500">
+                            {new Date(ans.created_at).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-700">
+                        {ans.content ||
+                          ans.message ||
+                          ans.answer ||
+                          (typeof ans === "string" ? ans : "")}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                /* Reply Input for Owner */
-                user?.role === "owner" &&
-                user?.id === ownerId && (
+                <div className="ml-8 mb-3 text-sm text-gray-500 italic">
+                  No answers yet
+                </div>
+              )}
+
+              {/* Reply Input for Owner */}
+              {user?.role === "owner" &&
+                (!answers[q.id] || answers[q.id].length === 0) && (
                   <div className="ml-8 mt-3">
                     {replyingTo === q.id ? (
                       <div className="flex gap-2">
@@ -83,14 +264,16 @@ export default function QASection({ questions = [], listingId, ownerId }) {
                           type="text"
                           value={replyContent}
                           onChange={(e) => setReplyContent(e.target.value)}
-                          placeholder="Type your answer..."
+                          placeholder="Write an answer..."
                           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                          disabled={isSubmitting}
                         />
                         <button
                           onClick={() => handleAnswerQuestion(q.id)}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+                          disabled={isSubmitting || !replyContent.trim()}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Submit
+                          {isSubmitting ? "Submitting..." : "Submit"}
                         </button>
                         <button
                           onClick={() => setReplyTo(null)}
@@ -108,8 +291,7 @@ export default function QASection({ questions = [], listingId, ownerId }) {
                       </button>
                     )}
                   </div>
-                )
-              )}
+                )}
             </div>
           ))
         ) : (
@@ -134,12 +316,14 @@ export default function QASection({ questions = [], listingId, ownerId }) {
               onChange={(e) => setNewQuestion(e.target.value)}
               placeholder="Ask the owner a question..."
               className="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#9afb21] focus:border-transparent"
+              disabled={isSubmitting}
             />
             <button
               onClick={handleAskQuestion}
-              className="bg-[#9afb21] text-black hover:bg-[#8aec1b] font-bold px-6 py-3 rounded-xl transition-colors flex items-center gap-2"
+              disabled={isSubmitting || !newQuestion.trim()}
+              className="bg-[#9afb21] text-black hover:bg-[#8aec1b] font-bold px-6 py-3 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Send size={18} /> Ask
+              <Send size={18} /> {isSubmitting ? "Asking..." : "Ask"}
             </button>
           </div>
         </div>
