@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 export default function PropertyPageHeader({ role, property }) {
   const router = useRouter();
 
-  if (role === "owner") {
+  if (role?.toLowerCase() === "owner") {
     return (
       <div className="bg-white border-b border-gray-200 mb-6">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -47,7 +47,10 @@ export default function PropertyPageHeader({ role, property }) {
             <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
               <FileText size={16} /> Manage Documents
             </button>
-            <button onClick={() => router.push("/owner/lists")} className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#0f0f11] hover:bg-black rounded-lg transition-colors">
+            <button
+              onClick={() => router.push("/owner/lists")}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#0f0f11] hover:bg-black rounded-lg transition-colors"
+            >
               <Edit2 size={16} /> Edit Listing
             </button>
           </div>
@@ -74,8 +77,8 @@ export default function PropertyPageHeader({ role, property }) {
           </Link>
           <span className="text-gray-300">/</span>
           <span className="hover:text-gray-900 transition-colors truncate max-w-[120px] sm:max-w-xs">
-            {typeof property.location === 'object' 
-              ? `${property.location.city}, ${property.location.state}` 
+            {typeof property.location === "object"
+              ? `${property.location.city}, ${property.location.state}`
               : property.location}
           </span>
           <span className="text-gray-300">/</span>
@@ -109,5 +112,3 @@ export default function PropertyPageHeader({ role, property }) {
     </div>
   );
 }
-
-
