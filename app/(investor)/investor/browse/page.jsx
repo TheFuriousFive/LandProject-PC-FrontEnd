@@ -34,7 +34,7 @@ export default function BrowseListings() {
         // According to instructions, use the endpoint mapping: /land-listings or /landapp/investors/search
         // This targets the specific Spring Boot @GetMapping("/search") from instructions
         // We will default hit this endpoint and parse JSON.
-        const response = await fetch(`${API_BASE}/landapp/investors/search`, {
+        const response = await fetch(`${API_BASE}/api/listings`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -46,6 +46,7 @@ export default function BrowseListings() {
         }
 
         const data = await response.json();
+        console.log(data);
         setListings(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error(
@@ -176,11 +177,10 @@ export default function BrowseListings() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-2">
-          Find Your Investment
+          Browse Listings
         </h1>
         <p className="text-gray-500 font-medium text-lg text-balance">
-          Browse and filter vetted land listings aligned with your investment
-          goals.
+          Explore and filter available properties for your next investment.
         </p>
       </div>
 

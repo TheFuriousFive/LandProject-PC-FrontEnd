@@ -18,7 +18,11 @@ export default function LandCard({ land }) {
   const isVerified =
     land.verificationStatus === "VERIFIED" ||
     land.verification_status === "verified";
-  const displayLandType = land.landType || land.land_type || "Land";
+
+  let displayLandType = land.landType || land.land_type || "Land";
+  if (displayLandType === "Error fetching data") {
+    displayLandType = "Land";
+  }
 
   return (
     <Link href={`/property/${land.id}`} className="block group h-full">

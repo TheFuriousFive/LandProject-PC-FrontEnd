@@ -337,10 +337,16 @@ export function useApi(apiFunction) {
 }
 export function useAuth() {
   const [user, setUser] = useState({
-    role:
-      typeof window !== "undefined"
-        ? localStorage.getItem("userRole") || "investor"
-        : "investor",
+    role: "investor",
   });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setUser({
+        role: localStorage.getItem("userRole") || "investor",
+      });
+    }
+  }, []);
+
   return { user };
 }

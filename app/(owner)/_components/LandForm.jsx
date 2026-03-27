@@ -155,6 +155,7 @@ export default function LandForm({
         title: formData.title,
         description: formData.description,
         location: `${formData.location.city}, ${formData.location.state}`,
+        landType: formData.zoning,
         land_type: formData.zoning,
         price: parseFloat(formData.price) || 0,
         area: parseFloat(formData.size.value) || 0,

@@ -1,29 +1,100 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Mail, Phone, MapPin, Building, ShieldCheck } from "lucide-react";
 import BackButton from "@/_components/BackButton";
 
 export default function InvestorProfile() {
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState({
-    firstName: "Alice",
-    lastName: "Johnson",
-    email: "alice.invests@example.com",
-    phone: "+1 (555) 123-4567",
-    company: "AJ Capital Group",
-    location: "New York, NY",
-    bio: "Real estate investor specializing in agricultural lands and developing mixed-use properties.",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    company: "",
+    location: "",
+    bio: "",
   });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/landapp/investors/me`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          },
+        );
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch profile");
+        }
+
+        const data = await res.json();
+
+        setProfile({
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          email: data.email || "",
+          phone: data.phone || "",
+          company: data.company || "",
+          location: data.location || "",
+          bio: data.bio || "",
+        });
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsEditing(false);
-    // Submit to an API here
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/landapp/investors/me`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(profile),
+        },
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to save profile");
+      }
+
+      console.log("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-gray-500 font-medium">Loading profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 md:p-12 max-w-4xl mx-auto">

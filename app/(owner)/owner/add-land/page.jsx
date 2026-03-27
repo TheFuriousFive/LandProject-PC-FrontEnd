@@ -170,10 +170,13 @@ export default function AddNewLand() {
         location: `${formData.location.city}, ${formData.location.state}`,
         status: "pending",
         verification_status: "unverified",
+        verificationStatus: "unverified",
+        landType: formData.zoning,
         land_type: formData.zoning,
         price: parseFloat(formData.price) || 0,
         area: parseFloat(formData.size.value) || 0,
         posted_date: new Date().toISOString(),
+        postedDate: new Date().toISOString(),
         ownerId: ownerId,
         owner: ownerId,
         land_listing_documents: formData.documents

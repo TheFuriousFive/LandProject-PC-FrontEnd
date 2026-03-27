@@ -25,132 +25,152 @@ export default function PropertyDetailsPage() {
   const params = useParams();
   const { user } = useAuth();
   console.log(user, "userrrrrrrrrrrrrrrrr");
-  // Mock property data - replace with API call
-  const property = {
-    id: params.propertyId || "1",
-    title: "Premium Agricultural Land in Kandy District",
-    location: "Kandy, Sri Lanka",
-    latitude: 7.2906,
-    longitude: 80.6337,
-    area: 50,
-    price: 1200000,
-    currency: "USD",
-    landType: "Agricultural",
-    surveyNumber: "SL-2024-12345",
-    status: "approved",
-    description:
-      "Spacious agricultural land ideal for crop cultivation with excellent soil quality and water access. Located near Kandy with good connectivity to markets.",
-    images: [
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800",
-      "https://images.unsplash.com/photo-1574082168995-b2b5e1cbf59f?q=80&w=800",
-    ],
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    // Owner info
-    owner: {
-      id: "owner-123",
-      name: "Mr. J. P. Jayasekara",
-      joinDate: "2023-01-15",
-      verified: true,
-      phone: "+94 71 234 5678",
-      email: "jayasekara@email.com",
-      previousListings: 3,
-      idVerified: true,
-      contactVerified: true,
-      kycCompleted: true,
-      accountAgeMonths: 24,
-    },
+  useEffect(() => {
+    const fetchPropertyData = async () => {
+      try {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+        let token = "";
+        if (typeof window !== "undefined") {
+          const rawToken = localStorage.getItem("token") || "";
+          token = rawToken.replace(/^"|"$/g, "").trim();
+        }
 
-    // Documents
-    documents: [
-      { type: "deed", name: "Land Deed.pdf", uploadedAt: "2024-02-01" },
-      { type: "surveyMap", name: "Survey Map.pdf", uploadedAt: "2024-02-02" },
-      {
-        type: "taxCertificate",
-        name: "Tax Certificate.pdf",
-        uploadedAt: "2024-02-03",
-      },
-      {
-        type: "pollutionClearance",
-        name: "Pollution Clearance.pdf",
-        uploadedAt: "2024-02-04",
-      },
-      {
-        type: "boundaryMarked",
-        name: "Boundary Survey.pdf",
-        uploadedAt: "2024-02-05",
-      },
-    ],
+        const headers = {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        };
 
-    // Connectivity & Accessibility
-    connectivity: {
-      nearbySchools: 3,
-      nearbyHospitals: 2,
-      publicTransportDistance: 2.5,
-      roadQuality: "good",
-      nearbyMarkets: 4,
-      waterAccess: true,
-      electricityAccess: true,
-    },
+        // Fetch base property details
+        const propertyRes = await fetch(
+          `${API_BASE}/api/listings/${params.propertyId}`,
+          { headers },
+        );
+        if (!propertyRes.ok)
+          throw new Error("Failed to fetch property details");
+        let propertyData = await propertyRes.json();
 
-    // Hazard Data
-    hazards: {
-      floodingHistory: "low",
-      seismicZone: "low",
-      soilQuality: "excellent",
-      pollutionLevel: "low",
-      nearestIndustryDistance: 15,
-      deforestationRisk: "low",
-    },
+        // Ensure default structure so UI won't crash while mapping
+        propertyData = {
+          id: propertyData.id || params.propertyId,
+          title: propertyData.title || "Unknown Title",
+          location:
+            propertyData.location || propertyData.address || "Unknown Location",
+          latitude: propertyData.latitude || 7.2906,
+          longitude: propertyData.longitude || 80.6337,
+          area: propertyData.area || 0,
+          price: propertyData.price || 0,
+          currency: propertyData.currency || "USD",
+          landType:
+            propertyData.landType || propertyData.land_type || "Unknown",
+          surveyNumber: propertyData.surveyNumber || "N/A",
+          status:
+            propertyData.status || propertyData.verificationStatus || "unknown",
+          description: propertyData.description || "No description provided.",
+          images:
+            propertyData.imageUrls && propertyData.imageUrls.length > 0
+              ? propertyData.imageUrls
+              : [
+                  "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800",
+                  "https://images.unsplash.com/photo-1574082168995-b2b5e1cbf59f?q=80&w=800",
+                ],
+          owner: propertyData.owner || {
+            id: "owner-123",
+            name: "Unknown Owner",
+            joinDate: "2023-01-15",
+            verified: false,
+            phone: "N/A",
+            email: "N/A",
+            previousListings: 0,
+            idVerified: false,
+            contactVerified: false,
+            kycCompleted: false,
+            accountAgeMonths: 0,
+          },
+          documents: propertyData.documents || [],
+          connectivity: propertyData.connectivity || {
+            nearbySchools: 0,
+            nearbyHospitals: 0,
+            publicTransportDistance: 0,
+            roadQuality: "unknown",
+            nearbyMarkets: 0,
+            waterAccess: false,
+            electricityAccess: false,
+          },
+          hazards: propertyData.hazards || {
+            floodingHistory: "low",
+            seismicZone: "low",
+            soilQuality: "moderate",
+            pollutionLevel: "low",
+            nearestIndustryDistance: 10,
+            deforestationRisk: "low",
+          },
+          reviews: propertyData.reviews || [],
+          questions: propertyData.questions || [],
+        };
 
-    // Reviews
-    reviews: [
-      {
-        id: "review-1",
-        author: "Anonymous Investor",
-        rating: 5,
-        date: "2024-03-01",
-        comment:
-          "Excellent property with clear title and complete documentation. Owner was very cooperative during the inspection process.",
-        aspects: ["Good location", "Easy to understand", "Responsive owner"],
-        ownerReply: {
-          author: "Mr. J. P. Jayasekara",
-          date: "2024-03-02",
-          comment:
-            "Thank you for the positive feedback. We appreciate your interest in our property.",
-        },
-      },
-      {
-        id: "review-2",
-        author: "Developer",
-        rating: 4,
-        date: "2024-02-28",
-        comment:
-          "Good investment opportunity. Soil quality is excellent for agriculture. Some minor access issues during rainy season.",
-        aspects: ["Soil quality", "Accessible location"],
-      },
-    ],
+        // Fetch questions
+        try {
+          const qRes = await fetch(
+            `${API_BASE}/api/listings/${params.propertyId}/questions`,
+            { headers },
+          );
+          if (qRes.ok) {
+            const qData = await qRes.json();
+            if (Array.isArray(qData)) {
+              propertyData.questions = qData;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch questions:", e);
+        }
 
-    // Questions & Answers
-    questions: [
-      {
-        id: "q-1",
-        investorName: "Alice Smith",
-        date: "2024-03-10",
-        content: "Is there an existing irrigation system in place?",
-        answer:
-          "Yes, there is a drip irrigation system installed covering 30% of the land.",
-        answerDate: "2024-03-11",
-      },
-      {
-        id: "q-2",
-        investorName: "Bob Jones",
-        date: "2024-03-15",
-        content: "What crops were previously grown here?",
-        answer: null,
-        answerDate: null,
-      },
-    ],
-  };
+        // Fetch reviews
+        try {
+          const rRes = await fetch(
+            `${API_BASE}/api/listings/${params.propertyId}/reviews`,
+            { headers },
+          );
+          if (rRes.ok) {
+            const rData = await rRes.json();
+            if (Array.isArray(rData)) {
+              propertyData.reviews = rData;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch reviews:", e);
+        }
+
+        setProperty(propertyData);
+      } catch (error) {
+        console.error("Error fetching property:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (params.propertyId) {
+      fetchPropertyData();
+    }
+  }, [params.propertyId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!property) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Property not found
+      </div>
+    );
+  }
 
   // Calculate metrics
   const locationInsights = GeoUtils.getLocationInsights(property);
