@@ -22,17 +22,35 @@ export default function AppointmentResponsesPage() {
       try {
         setLoading(true);
         setError(null);
-        // Call the API to get investor's appointment responses
-        let token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("token") || ""
-            : "";
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}`, {
+        let token = "";
+        if (typeof window !== "undefined") {
+          token = localStorage.getItem("token") || "";
+        }
+
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+        const res = await fetch(`${apiBase}/appointments/investor/responses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Failed to fetch");
         const response = await res.json();
-        setResponses(response.data || response || []);
+        const rawResponses = response.data || response || [];
+        const normalized = rawResponses.map((item) => ({
+          ...item,
+          ownerName: item.ownerName || item.owner_name || "Property Owner",
+          ownerEmail: item.ownerEmail || item.owner_email || "N/A",
+          ownerPhone: item.ownerPhone || item.owner_phone || "N/A",
+          ownerContactMethod:
+            item.ownerContactMethod ||
+            item.contactMethod ||
+            item.contactedVia ||
+            null,
+          ownerContactedAt:
+            item.ownerContactedAt || item.contactConfirmedAt || item.contactedAt || null,
+          investorReadConfirmedAt:
+            item.investorReadConfirmedAt || item.readConfirmedAt || null,
+        }));
+        setResponses(normalized);
       } catch (err) {
         console.error("Failed to fetch appointment responses:", err);
         setError(
@@ -64,6 +82,8 @@ export default function AppointmentResponsesPage() {
       ownerName: "John Smith",
       ownerEmail: "john.smith@example.com",
       ownerPhone: "+1-555-0101",
+      ownerContactMethod: "email",
+      ownerContactedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       responseMessage:
         "Great! I can accommodate your visit on the proposed date.",
       requestDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
@@ -114,6 +134,8 @@ export default function AppointmentResponsesPage() {
       ownerName: "Emily Rodriguez",
       ownerEmail: "emily.rodriguez@example.com",
       ownerPhone: "+1-555-0104",
+      ownerContactMethod: "phone",
+      ownerContactedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       responseMessage: "I can reschedule to a time that works better for me.",
       rescheduledDateTime: new Date(
         Date.now() + 7 * 24 * 60 * 60 * 1000,
@@ -168,6 +190,37 @@ export default function AppointmentResponsesPage() {
     } catch (err) {
       console.error("Failed to reschedule appointment:", err);
       throw err;
+    }
+  };
+
+  const handleAcknowledgeRead = async (appointmentId) => {
+    const acknowledgedAt = new Date().toISOString();
+    try {
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+      let token = "";
+      if (typeof window !== "undefined") {
+        token = localStorage.getItem("token") || "";
+      }
+
+      await fetch(`${apiBase}/appointments/${appointmentId}/read-confirmation`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ acknowledgedAt }),
+      });
+    } catch (err) {
+      console.warn("Could not sync read confirmation, keeping local state", err);
+    } finally {
+      setResponses((prev) =>
+        prev.map((resp) =>
+          resp.id === appointmentId
+            ? { ...resp, investorReadConfirmedAt: acknowledgedAt }
+            : resp,
+        ),
+      );
     }
   };
 
@@ -322,6 +375,7 @@ export default function AppointmentResponsesPage() {
                   key={response.id}
                   appointment={response}
                   onReschedule={handleReschedule}
+                  onAcknowledgeRead={handleAcknowledgeRead}
                 />
               ))}
             </div>
