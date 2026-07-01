@@ -4,37 +4,160 @@ import { useEffect, useState } from "react";
 import { CheckCircle, Eye, Search, AlertTriangle } from "lucide-react";
 import BackButton from "@/_components/BackButton";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+const normalizeStatus = (listing) =>
+  String(
+    listing?.status ||
+      listing?.verification_status ||
+      listing?.verificationStatus ||
+      "",
+  ).toLowerCase();
+
+const isApproved = (listing) => normalizeStatus(listing) === "approved";
+
+const getStoredAuthenticatorId = () => {
+  try {
+    const rawUser = localStorage.getItem("user");
+    if (!rawUser) return null;
+
+    const user = JSON.parse(rawUser);
+
+    return (
+      user?.id ||
+      user?.userId ||
+      user?.authenticatorId ||
+      user?.user?.id ||
+      user?.user?.userId ||
+      user?.user?.authenticatorId ||
+      null
+    );
+  } catch {
+    return null;
+  }
+};
+
 export default function ApprovedListings() {
   const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchApprovedListingsFromApi = async (token) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/listings/approved`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      const records = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+      return records;
+    } catch (error) {
+      return null;
+    }
+  };
 
   useEffect(() => {
+    const loadApprovedListings = async () => {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const apiListings = await fetchApprovedListingsFromApi(token);
+
+      if (apiListings !== null) {
+        // Backend already scopes this to approved-only, but filter
+        // defensively in case the response ever mixes statuses.
+        setListings(apiListings.filter(isApproved));
+      } else {
+        // Fallback to whatever was cached locally if the backend call fails.
+        const allListings = JSON.parse(
+          localStorage.getItem("land_listings") || "[]",
+        );
+        setListings(allListings.filter(isApproved));
+      }
+      setLoading(false);
+    };
+
+    loadApprovedListings();
+  }, []);
+
+  const handleRevoke = async (id) => {
+    if (!confirm("Are you sure you want to revoke this approval?")) return;
+
+    const authenticatorId = getStoredAuthenticatorId();
+
+    if (!authenticatorId) {
+      alert(
+        "Unable to identify the signed-in authenticator. Please sign in again.",
+      );
+      return;
+    }
+
+    const targetListing = listings.find((l) => l.id === id);
+
+    // Optimistically remove from the approved view.
+    setListings((prev) => prev.filter((l) => l.id !== id));
+
+    // Keep localStorage cache consistent for any pages still reading it.
     const allListings = JSON.parse(
       localStorage.getItem("land_listings") || "[]",
     );
-    setListings(allListings.filter((l) => l.status === "approved"));
-  }, []);
+    const updated = allListings.map((l) =>
+      l.id === id
+        ? {
+            ...l,
+            status: "PENDING",
+            verification_status: "PENDING_VERIFICATION",
+            verificationStatus: "PENDING_VERIFICATION",
+          }
+        : l,
+    );
+    localStorage.setItem("land_listings", JSON.stringify(updated));
 
-  const handleRevoke = (id) => {
-    if (confirm("Are you sure you want to revoke this approval?")) {
-      const allListings = JSON.parse(
-        localStorage.getItem("land_listings") || "[]",
-      );
-      const updated = allListings.map((l) =>
-        l.id === id ? { ...l, status: "pending" } : l,
-      );
-      localStorage.setItem("land_listings", JSON.stringify(updated));
-      setListings(listings.filter((l) => l.id !== id));
+    const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
+    logs.unshift({
+      id: `${id}-revoke-${logs.length + 1}`,
+      action: "Approval Revoked by Ministry",
+      target: targetListing?.title || "Unknown listing",
+      date: new Date().toISOString(),
+    });
+    localStorage.setItem("owner_logs", JSON.stringify(logs));
 
-      const targetListing = allListings.find((l) => l.id === id);
-      const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
-      logs.unshift({
-        // eslint-disable-next-line react-hooks/purity
-        id: Date.now(),
-        action: "Approval Revoked by Ministry",
-        target: targetListing.title,
-        date: new Date().toISOString(),
+    // Push the revocation to the backend so it's reflected as REJECTED
+    // (the schema only supports PENDING_VERIFICATION / APPROVED / REJECTED).
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE}/api/listings/verify-land`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          listingId: id,
+          landListingId: id,
+          approved: false,
+          authenticatorId,
+        }),
       });
-      localStorage.setItem("owner_logs", JSON.stringify(logs));
+
+      if (!response.ok) {
+        console.warn(
+          "Backend did not confirm revocation; local state was updated optimistically.",
+        );
+      }
+    } catch (error) {
+      console.warn(
+        "Backend request failed, but the local listing state was already updated:",
+        error,
+      );
     }
   };
 
@@ -69,7 +192,11 @@ export default function ApprovedListings() {
           </div>
         </div>
 
-        {listings.length === 0 ? (
+        {loading ? (
+          <div className="p-12 text-center text-gray-500">
+            <p>Loading approved listings...</p>
+          </div>
+        ) : listings.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             <CheckCircle className="mx-auto text-gray-300 mb-4" size={48} />
             <p>No approved listings found.</p>
@@ -105,7 +232,9 @@ export default function ApprovedListings() {
                     </p>
                   </td>
                   <td className="px-6 py-4 font-medium text-gray-700">
-                    {typeof land.location === 'object' && land.location !== null ? `${land.location.city || ''}, ${land.location.state || ''}` : land.location}
+                    {typeof land.location === "object" && land.location !== null
+                      ? `${land.location.city || ""}, ${land.location.state || ""}`
+                      : land.location}
                   </td>
                   <td className="px-6 py-4 font-medium text-gray-700">
                     {land.ownerId}

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Share2, Heart, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import LocationMap from "@/_modules/geospatial/LocationMap";
 import TrustScoreDisplay from "@/_modules/trustScore/TrustScoreDisplay";
 import ReviewSection from "@/_shared/ReviewSection";
@@ -12,6 +13,66 @@ import PropertyPageHeader from "@/_modules/property/PropertyPageHeader";
 import { useAuth } from "@/lib/hooks";
 import MDEditor from "@uiw/react-md-editor";
 import ContactInquiryCard from "@/_shared/ContactInquiryCard";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+const normalizeStatus = (listing) =>
+  String(
+    listing?.status ||
+      listing?.verificationStatus ||
+      listing?.verification_status ||
+      "",
+  ).toLowerCase();
+
+const isApprovedListing = (listing) => normalizeStatus(listing) === "approved";
+
+const getFallbackProperties = () => [
+  {
+    id: 1,
+    title: "Premium Agricultural Land",
+    description: "Fertile soil, great for crops and farming.",
+    price: 1200000,
+    area: 320,
+    location: "Iowa, IA",
+    landType: "Agricultural",
+    verificationStatus: "VERIFIED",
+    status: "approved",
+    osmLandUse: "Farmland",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800&auto=format&fit=crop",
+    ],
+  },
+  {
+    id: 2,
+    title: "Development Ready Plot",
+    description: "Prime location for residential development.",
+    price: 850000,
+    area: 85,
+    location: "Texas, TX",
+    landType: "Mixed Use",
+    verificationStatus: "VERIFIED",
+    status: "approved",
+    osmLandUse: "Meadow",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1492617519907-e0f71f7c76fc?q=80&w=800&auto=format&fit=crop",
+    ],
+  },
+  {
+    id: 3,
+    title: "Pine Forest Retreat",
+    description: "Beautiful timber property with road access.",
+    price: 450000,
+    area: 120,
+    location: "Oregon, OR",
+    landType: "Residential",
+    verificationStatus: "UNVERIFIED",
+    status: "approved",
+    osmLandUse: "Forest",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800&auto=format&fit=crop",
+    ],
+  },
+];
 
 export default function PropertyDetailsPage() {
   const params = useParams();
@@ -55,7 +116,6 @@ export default function PropertyDetailsPage() {
   useEffect(() => {
     const fetchPropertyData = async () => {
       try {
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL;
         let token = "";
         if (typeof window !== "undefined") {
           const rawToken = localStorage.getItem("token") || "";
@@ -92,9 +152,7 @@ export default function PropertyDetailsPage() {
           throw new Error("Property not found in search results");
         }
 
-        const normalizedStatus = String(
-          propertyData.status || propertyData.verificationStatus || "",
-        ).toLowerCase();
+        const normalizedStatus = normalizeStatus(propertyData);
 
         if (normalizedStatus !== "approved") {
           throw new Error("Property not found in search results");
@@ -197,6 +255,89 @@ export default function PropertyDetailsPage() {
         setProperty(propertyData);
       } catch (error) {
         console.error("Error fetching property:", error);
+
+        const fallbackProperties = getFallbackProperties();
+        const localListings = JSON.parse(
+          localStorage.getItem("land_listings") || "[]",
+        );
+        const combinedListings = [...localListings, ...fallbackProperties];
+        const approvedListing = combinedListings.find(
+          (listing) =>
+            String(listing.id) === String(params.propertyId) &&
+            isApprovedListing(listing),
+        );
+
+        if (approvedListing) {
+          setProperty({
+            id: approvedListing.id,
+            title: approvedListing.title || "Unknown Title",
+            location:
+              approvedListing.location ||
+              approvedListing.address ||
+              "Unknown Location",
+            latitude: approvedListing.latitude || 7.2906,
+            longitude: approvedListing.longitude || 80.6337,
+            area: approvedListing.area || approvedListing.acres || 0,
+            price: approvedListing.price || 0,
+            currency: approvedListing.currency || "USD",
+            landType:
+              approvedListing.landType ||
+              approvedListing.land_type ||
+              "Unknown",
+            surveyNumber: approvedListing.surveyNumber || "N/A",
+            status:
+              approvedListing.status ||
+              approvedListing.verificationStatus ||
+              "approved",
+            description:
+              approvedListing.description || "No description provided.",
+            images:
+              approvedListing.imageUrls && approvedListing.imageUrls.length > 0
+                ? approvedListing.imageUrls
+                : [
+                    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800",
+                  ],
+            owner: approvedListing.owner || {
+              id: approvedListing.ownerId || "owner-123",
+              name: "Unknown Owner",
+              avatar:
+                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
+              joinDate: "2023-01-15",
+              verified: false,
+              phone: "N/A",
+              email: "N/A",
+              previousListings: 0,
+              idVerified: false,
+              contactVerified: false,
+              kycCompleted: false,
+              accountAgeMonths: 0,
+            },
+            keywords: approvedListing.keywords || [],
+            documents:
+              approvedListing.documents ||
+              approvedListing.land_listing_documents ||
+              [],
+            connectivity: approvedListing.connectivity || {
+              nearbySchools: 0,
+              nearbyHospitals: 0,
+              publicTransportDistance: 0,
+              roadQuality: "unknown",
+              nearbyMarkets: 0,
+              waterAccess: false,
+              electricityAccess: false,
+            },
+            hazards: approvedListing.hazards || {
+              floodingHistory: "low",
+              seismicZone: "low",
+              soilQuality: "moderate",
+              pollutionLevel: "low",
+              nearestIndustryDistance: 10,
+              deforestationRisk: "low",
+            },
+            reviews: approvedListing.reviews || [],
+            questions: approvedListing.questions || [],
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -238,10 +379,13 @@ export default function PropertyDetailsPage() {
         {/* Header with Images */}
         <div className="mb-8">
           <div className="relative rounded-2xl overflow-hidden mb-4 h-96 bg-gray-200 group">
-            <img
+            <Image
               src={property.images ? property.images[currentImageIndex] : ""}
               alt={property.title}
-              className="w-full h-full object-cover transition-opacity duration-300"
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 1200px"
+              className="object-cover transition-opacity duration-300"
             />
 
             {/* Navigation Arrows */}
@@ -314,10 +458,12 @@ export default function PropertyDetailsPage() {
                       : "opacity-75 hover:opacity-100"
                   } transition-all`}
                 >
-                  <img
+                  <Image
                     src={img}
                     alt={`Property image ${idx + 1}`}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="120px"
+                    className="object-cover"
                   />
                 </div>
               ))}

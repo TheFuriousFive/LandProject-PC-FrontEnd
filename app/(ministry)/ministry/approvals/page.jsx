@@ -13,23 +13,68 @@ import {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+const normalizeStatus = (listing) =>
+  String(
+    listing?.verification_status || listing?.verificationStatus || "",
+  ).toLowerCase();
+
+const isPendingReview = (listing) =>
+  normalizeStatus(listing) === "pending_verification";
+
+const getReviewStatusLabel = (listing) => {
+  const status = normalizeStatus(listing);
+
+  switch (status) {
+    case "pending_verification":
+      return "PENDING VERIFICATION";
+    default:
+      return status
+        ? status.replace(/_/g, " ").toUpperCase()
+        : "PENDING VERIFICATION";
+  }
+};
+
+const applyDecisionToListing = (listing, action) => ({
+  ...listing,
+  status: action === "approved" ? "APPROVED" : "REJECTED",
+  verification_status: action === "approved" ? "APPROVED" : "REJECTED",
+  verificationStatus: action === "approved" ? "APPROVED" : "REJECTED",
+});
+
+const getStoredAuthenticatorId = () => {
+  try {
+    const rawUser = localStorage.getItem("user");
+    if (!rawUser) return null;
+
+    const user =
+      rawUser.startsWith('"') && rawUser.endsWith('"')
+        ? JSON.parse(rawUser)
+        : JSON.parse(rawUser);
+
+    return (
+      user?.id ||
+      user?.userId ||
+      user?.authenticatorId ||
+      user?.user?.id ||
+      user?.user?.userId ||
+      user?.user?.authenticatorId ||
+      null
+    );
+  } catch {
+    return null;
+  }
+};
+
 export default function PendingApprovals() {
   const [listings, setListings] = useState([]);
   const [activeTabs, setActiveTabs] = useState({});
 
-  const normalizeStatus = (listing) =>
-    String(
-      listing?.status ||
-        listing?.verification_status ||
-        listing?.verificationStatus ||
-        "",
-    ).toLowerCase();
+  const fetchPendingListingsFromApi = async (token) => {
+    const endpoints = ["/api/listings", "/api/listings/pending"];
 
-  useEffect(() => {
-    const fetchPendingListings = async () => {
+    for (const endpoint of endpoints) {
       try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${API_BASE}/api/listings/pending`, {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -37,13 +82,33 @@ export default function PendingApprovals() {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to fetch pending listings");
+          continue;
         }
 
         const data = await response.json();
-        const pendingListings = (Array.isArray(data) ? data : []).filter(
-          (listing) => normalizeStatus(listing) === "pending",
-        );
+        const records = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+        const pendingListings = records.filter(isPendingReview);
+
+        if (pendingListings.length > 0 || records.length > 0) {
+          return pendingListings;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    return [];
+  };
+
+  useEffect(() => {
+    const fetchPendingListings = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const pendingListings = await fetchPendingListingsFromApi(token);
 
         setListings(pendingListings);
 
@@ -59,9 +124,7 @@ export default function PendingApprovals() {
         const allListings = JSON.parse(
           localStorage.getItem("land_listings") || "[]",
         );
-        const pendingListings = allListings.filter(
-          (listing) => normalizeStatus(listing) === "pending",
-        );
+        const pendingListings = allListings.filter(isPendingReview);
         setListings(pendingListings);
 
         const tabDefaults = pendingListings.reduce((acc, listing) => {
@@ -78,6 +141,43 @@ export default function PendingApprovals() {
 
   const handleAction = async (id, action) => {
     if (confirm(`Are you sure you want to ${action} this listing?`)) {
+      const authenticatorId = getStoredAuthenticatorId();
+
+      if (!authenticatorId) {
+        alert(
+          "Unable to identify the signed-in authenticator. Please sign in again.",
+        );
+        return;
+      }
+
+      const allListings = JSON.parse(
+        localStorage.getItem("land_listings") || "[]",
+      );
+      const updated = allListings.map((listing) =>
+        listing.id === id ? applyDecisionToListing(listing, action) : listing,
+      );
+
+      localStorage.setItem("land_listings", JSON.stringify(updated));
+
+      const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
+      const targetListing = allListings.find((listing) => listing.id === id);
+      const logAction =
+        action === "approved" ? "Approved by Ministry" : "Rejected by Ministry";
+      logs.unshift({
+        id: `${id}-${action}-${logs.length + 1}`,
+        action: logAction,
+        target: targetListing?.title || "Unknown listing",
+        date: new Date().toISOString(),
+      });
+      localStorage.setItem("owner_logs", JSON.stringify(logs));
+
+      setListings((prev) => prev.filter((listing) => listing.id !== id));
+      setActiveTabs((prev) => {
+        const nextTabs = { ...prev };
+        delete nextTabs[id];
+        return nextTabs;
+      });
+
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(`${API_BASE}/api/listings/verify-land`, {
@@ -90,51 +190,20 @@ export default function PendingApprovals() {
             listingId: id,
             landListingId: id,
             approved: action === "approved",
+            authenticatorId,
           }),
         });
 
         if (!response.ok) {
-          throw new Error("Failed to update listing status");
+          console.warn(
+            "Backend did not confirm listing status update; local state was updated optimistically.",
+          );
         }
-
-        setListings((prev) => prev.filter((listing) => listing.id !== id));
-        setActiveTabs((prev) => {
-          const nextTabs = { ...prev };
-          delete nextTabs[id];
-          return nextTabs;
-        });
       } catch (error) {
-        console.error(error);
-
-        const allListings = JSON.parse(
-          localStorage.getItem("land_listings") || "[]",
+        console.warn(
+          "Backend request failed, but the local listing state was already updated:",
+          error,
         );
-        const updated = allListings.map((listing) =>
-          listing.id === id ? { ...listing, status: action } : listing,
-        );
-
-        localStorage.setItem("land_listings", JSON.stringify(updated));
-        setListings((prev) => prev.filter((listing) => listing.id !== id));
-        setActiveTabs((prev) => {
-          const nextTabs = { ...prev };
-          delete nextTabs[id];
-          return nextTabs;
-        });
-
-        // We could add to owner logs here, mocking a backend trigger
-        const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
-        const targetListing = allListings.find((listing) => listing.id === id);
-        const logAction =
-          action === "approved"
-            ? "Approved by Ministry"
-            : "Rejected by Ministry";
-        logs.unshift({
-          id: Date.now(),
-          action: logAction,
-          target: targetListing?.title || "Unknown listing",
-          date: new Date().toISOString(),
-        });
-        localStorage.setItem("owner_logs", JSON.stringify(logs));
       }
     }
   };
@@ -207,7 +276,7 @@ export default function PendingApprovals() {
                       {land.title}
                     </h3>
                     <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2.5 py-1 rounded-lg">
-                      AWAITING REVIEW
+                      {getReviewStatusLabel(land)}
                     </span>
                   </div>
                   <p className="text-gray-500 text-sm mb-4">
@@ -300,7 +369,7 @@ export default function PendingApprovals() {
                                 Verification Status
                               </p>
                               <p className="font-bold text-gray-900 capitalize">
-                                {land.verification_status || "unverified"}
+                                {getReviewStatusLabel(land)}
                               </p>
                             </div>
                             <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">

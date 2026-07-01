@@ -25,6 +25,11 @@ export default function MinistryDashboard() {
           "",
       ).toLowerCase();
 
+    const isPendingReview = (listing) =>
+      ["pending", "pending_verification", "pending_payment"].includes(
+        normalizeStatus(listing),
+      );
+
     const fetchDashboardListings = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -43,9 +48,7 @@ export default function MinistryDashboard() {
         const listings = Array.isArray(data) ? data : [];
 
         setStats({
-          pending: listings.filter(
-            (listing) => normalizeStatus(listing) === "pending",
-          ).length,
+          pending: listings.filter(isPendingReview).length,
           approved: listings.filter(
             (listing) => normalizeStatus(listing) === "approved",
           ).length,
@@ -54,11 +57,7 @@ export default function MinistryDashboard() {
           ).length,
         });
 
-        setRecentApprovals(
-          listings
-            .filter((listing) => normalizeStatus(listing) === "pending")
-            .slice(0, 3),
-        );
+        setRecentApprovals(listings.filter(isPendingReview).slice(0, 3));
       } catch (error) {
         console.error(error);
 
@@ -67,9 +66,7 @@ export default function MinistryDashboard() {
         );
 
         setStats({
-          pending: fallbackListings.filter(
-            (listing) => normalizeStatus(listing) === "pending",
-          ).length,
+          pending: fallbackListings.filter(isPendingReview).length,
           approved: fallbackListings.filter(
             (listing) => normalizeStatus(listing) === "approved",
           ).length,
@@ -79,9 +76,7 @@ export default function MinistryDashboard() {
         });
 
         setRecentApprovals(
-          fallbackListings
-            .filter((listing) => normalizeStatus(listing) === "pending")
-            .slice(0, 3),
+          fallbackListings.filter(isPendingReview).slice(0, 3),
         );
       }
     };
