@@ -24,38 +24,67 @@ export default function CreateAccountPage() {
 
   // Watch the role value so we can style the active button accordingly
   const activeRole = watch("role");
-
-  // This function runs when the form is successfully submitted
   const onSubmit = async (data) => {
     try {
+      const backendRole = data.role === "admin" ? "authenticator" : data.role;
+
       const endpointMap = {
         investor: "/auth/signup/investor",
         owner: "/auth/signup/owner",
+        authenticator: "/auth/signup/authenticator",
       };
 
-      const endpoint = `${process.env.NEXT_PUBLIC_API_URL}${endpointMap[data.role]}`;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const path = endpointMap[backendRole];
+
+      if (!baseUrl || !path) {
+        throw new Error(
+          "Missing API URL or role endpoint. Check your .env file!",
+        );
+      }
+
+      const endpoint = `${baseUrl}${path}`;
+
+      // Build the payload
+      const payload = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        passwordHash: data.password,
+        contactNumber: data.contactNumber || "0000000000",
+      };
+
+      // Conditionally add the required Registration Number if it's an authenticator
+      if (backendRole === "authenticator") {
+        if (!data.professionalRegNumber) {
+          throw new Error(
+            "Professional Registration Number is required for Government Admins.",
+          );
+        }
+        payload.professionalRegNumber = data.professionalRegNumber;
+      }
 
       const res = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          contactNumber: data.contactNumber,
-          passwordHash: data.password,
-        }),
+        body: JSON.stringify(payload),
       });
+
+      // Catch HTML responses before they crash the JSON parser
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(
+          `Server returned HTML instead of JSON. Check backend at ${endpoint}`,
+        );
+      }
 
       const result = await res.json();
 
       if (!res.ok) {
         throw new Error(result.message || "Registration failed");
       }
-
-      console.log("Success:", result);
 
       alert("Account created successfully!");
       router.push("/login");
@@ -64,6 +93,45 @@ export default function CreateAccountPage() {
       alert(err.message);
     }
   };
+  // This function runs when the form is successfully submitted
+  // const onSubmit = async (data) => {
+  //   try {
+  //     const endpointMap = {
+  //       investor: "/auth/signup/investor",
+  //       owner: "/auth/signup/owner",
+  //     };
+
+  //     const endpoint = `${process.env.NEXT_PUBLIC_API_URL}${endpointMap[data.role]}`;
+
+  //     const res = await fetch(endpoint, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         firstName: data.firstName,
+  //         lastName: data.lastName,
+  //         email: data.email,
+  //         contactNumber: data.contactNumber,
+  //         passwordHash: data.password,
+  //       }),
+  //     });
+
+  //     const result = await res.json();
+
+  //     if (!res.ok) {
+  //       throw new Error(result.message || "Registration failed");
+  //     }
+
+  //     console.log("Success:", result);
+
+  //     alert("Account created successfully!");
+  //     router.push("/login");
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert(err.message);
+  //   }
+  // };
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
@@ -73,7 +141,7 @@ export default function CreateAccountPage() {
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
 
         {/* Registration Card */}
-        <div className="relative bg-white w-full max-w-[540px] rounded-t-none md:rounded-xl p-8 md:p-12 shadow-2xl z-10 my-0 md:my-8 h-full md:h-auto overflow-y-auto">
+        <div className="relative bg-white w-full max-w-135 rounded-t-none md:rounded-xl p-8 md:p-12 shadow-2xl z-10 my-0 md:my-8 h-full md:h-auto overflow-y-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#0a0a0a] tracking-tight mb-2">
               Create an Account
@@ -195,7 +263,20 @@ export default function CreateAccountPage() {
                 )}
               </div>
             </div>
-
+            {/* ONLY show this field if they selected Govt Admin */}
+            {activeRole === "admin" && (
+              <div className="mb-4 col-span-2">
+                <label className="text-[12px] font-bold text-gray-700 mb-1.5 block">
+                  Professional Registration Number
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. REG-2026-998"
+                  {...register("professionalRegNumber")}
+                  className={`w-full bg-[#f8f9fa] border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-[#9afb21] focus:border-[#9afb21] block p-3 outline-none transition-colors`}
+                />
+              </div>
+            )}
             <div className="mb-4">
               <label className="text-[12px] font-bold text-gray-700 mb-1.5 block">
                 Email Address

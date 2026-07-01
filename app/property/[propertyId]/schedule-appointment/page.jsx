@@ -2,7 +2,13 @@
 
 import { useParams, useRouter } from "next/navigation";
 import BackButton from "@/_components/BackButton";
-import { Calendar, Clock, MessageSquare, ArrowLeft, CheckCircle } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  MessageSquare,
+  ArrowLeft,
+  CheckCircle,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function ScheduleAppointmentPage() {
@@ -57,7 +63,10 @@ export default function ScheduleAppointmentPage() {
       date.setDate(date.getDate() + i);
       const dateStr = date.toISOString().split("T")[0];
       const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
-      const dayDate = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const dayDate = date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
       dates.push({ value: dateStr, label: `${dayName}, ${dayDate}` });
     }
     return dates;
@@ -79,7 +88,7 @@ export default function ScheduleAppointmentPage() {
     setTimeout(() => {
       // Save to localStorage
       const appointments = JSON.parse(
-        localStorage.getItem("appointments") || "[]"
+        localStorage.getItem("appointments") || "[]",
       );
       const newAppointment = {
         id: "apt_" + Date.now(),
@@ -98,10 +107,13 @@ export default function ScheduleAppointmentPage() {
 
       // Add to owner's appointment requests
       const ownerAppointments = JSON.parse(
-        localStorage.getItem("owner_appointments") || "[]"
+        localStorage.getItem("owner_appointments") || "[]",
       );
       ownerAppointments.push(newAppointment);
-      localStorage.setItem("owner_appointments", JSON.stringify(ownerAppointments));
+      localStorage.setItem(
+        "owner_appointments",
+        JSON.stringify(ownerAppointments),
+      );
 
       setIsSubmitting(false);
       setSubmitted(true);
@@ -126,12 +138,16 @@ export default function ScheduleAppointmentPage() {
             <div className="bg-gray-50 rounded-xl p-6 mb-8 text-left">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-500 font-semibold">Property</p>
+                  <p className="text-sm text-gray-500 font-semibold">
+                    Property
+                  </p>
                   <p className="text-gray-900 font-bold">{property.title}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 font-semibold">Owner</p>
-                  <p className="text-gray-900 font-bold">{property.owner.name}</p>
+                  <p className="text-gray-900 font-bold">
+                    {property.owner.name}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 font-semibold">Date</p>
@@ -151,7 +167,8 @@ export default function ScheduleAppointmentPage() {
             </div>
 
             <p className="text-gray-600 mb-6">
-              The owner will review your request and contact you shortly at your registered phone number or email.
+              The owner will review your request and contact you shortly at your
+              registered phone number or email.
             </p>
 
             <div className="flex gap-3 justify-center">
@@ -243,7 +260,9 @@ export default function ScheduleAppointmentPage() {
               </label>
               <select
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors"
               >
                 <option value="">Choose a date...</option>
@@ -264,7 +283,9 @@ export default function ScheduleAppointmentPage() {
               <input
                 type="time"
                 value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, time: e.target.value })
+                }
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors"
                 required
               />
@@ -278,7 +299,9 @@ export default function ScheduleAppointmentPage() {
               </label>
               <textarea
                 value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, message: e.target.value })
+                }
                 placeholder="Tell the owner about your interest, questions, or special requirements..."
                 rows="4"
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors"
@@ -313,7 +336,7 @@ export default function ScheduleAppointmentPage() {
           <ul className="text-sm text-gray-600 space-y-2">
             <li>✓ Your request will be sent to the property owner</li>
             <li>✓ The owner will review and confirm your appointment</li>
-            <li>✓ You'll receive a confirmation via email/phone</li>
+            <li>✓ You&apos;ll receive a confirmation via email/phone</li>
             <li>✓ Meeting location and details will be provided</li>
           </ul>
         </div>

@@ -67,8 +67,9 @@ export default function ServicesPage() {
             Our Services
           </h1>
           <p className="mt-4 text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Groundwise helps land owners, investors, and regulators collaborate through a single platform.
-            Get your property listed, connect with buyers, and move through approvals faster.
+            Groundwise helps land owners, investors, and regulators collaborate
+            through a single platform. Get your property listed, connect with
+            buyers, and move through approvals faster.
           </p>
         </header>
 
@@ -99,8 +100,9 @@ export default function ServicesPage() {
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-3xl font-extrabold">Ready to get started?</h2>
             <p className="mt-4 text-gray-200 leading-relaxed">
-              List your land, upload documents, and connect with buyers all in one place.
-              When you're ready, create an account and start growing your land portfolio.
+              List your land, upload documents, and connect with buyers all in
+              one place. When you&apos;re ready, create an account and start
+              growing your land portfolio.
             </p>
           </div>
         </section>

@@ -27,6 +27,7 @@ export default function SignInPage() {
   // Handle form submission
   const onSubmit = async (data) => {
     try {
+      const backendRole = data.role === "admin" ? "authenticator" : data.role;
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: "POST",
         headers: {
@@ -35,6 +36,7 @@ export default function SignInPage() {
         body: JSON.stringify({
           email: data.email,
           password: data.password,
+          role: backendRole,
         }),
       });
 
@@ -52,16 +54,26 @@ export default function SignInPage() {
 
       // ✅ Save user info (optional but useful)
       localStorage.setItem("user", JSON.stringify(result));
-      localStorage.setItem("userRole", result.userType.toLowerCase());
+
+      // Normalize the backend role so casing or field-name differences do not
+      // send owners/admins to the investor area.
+      const rawRole =
+        result.userType || result.role || backendRole || "investor";
+      const normalizedRole =
+        String(rawRole).toLowerCase() === "admin"
+          ? "authenticator"
+          : String(rawRole).toLowerCase();
+
+      localStorage.setItem("userRole", normalizedRole);
 
       // ✅ Redirect based on backend role (NOT frontend role)
       const roleRoutes = {
-        INVESTOR: "/investor",
-        OWNER: "/owner",
-        ADMIN: "/ministry",
+        investor: "/investor",
+        owner: "/owner",
+        authenticator: "/ministry",
       };
 
-      router.push(roleRoutes[result.userType] || "/investor");
+      router.push(roleRoutes[normalizedRole] || "/investor");
     } catch (error) {
       console.error(error);
       alert(error.message);
@@ -76,7 +88,7 @@ export default function SignInPage() {
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
 
         {/* Sign In Card */}
-        <div className="relative bg-white w-full max-w-[440px] rounded-t-none md:rounded-xl p-8 md:p-10 shadow-2xl z-10 my-0 md:my-8 h-full md:h-auto overflow-y-auto">
+        <div className="relative bg-white w-full max-w-110 rounded-t-none md:rounded-xl p-8 md:p-10 shadow-2xl z-10 my-0 md:my-8 h-full md:h-auto overflow-y-auto">
           {/* Header Icon */}
           <div className="flex justify-center mb-6">
             <div className="bg-[#0f0f11] w-14 h-14 rounded-xl flex items-center justify-center shadow-lg shadow-black/10">

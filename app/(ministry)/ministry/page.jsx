@@ -10,23 +10,83 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
 export default function MinistryDashboard() {
   const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0 });
   const [recentApprovals, setRecentApprovals] = useState([]);
 
   useEffect(() => {
-    const listings = JSON.parse(localStorage.getItem("land_listings") || "[]");
+    const normalizeStatus = (listing) =>
+      String(
+        listing?.status ||
+          listing?.verification_status ||
+          listing?.verificationStatus ||
+          "",
+      ).toLowerCase();
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStats({
-      pending: listings.filter((l) => l.status === "pending").length,
-      approved: listings.filter((l) => l.status === "approved").length,
-      rejected: listings.filter((l) => l.status === "rejected").length,
-    });
+    const fetchDashboardListings = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_BASE}/api/listings`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
 
-    setRecentApprovals(
-      listings.filter((l) => l.status === "pending").slice(0, 3),
-    );
+        if (!response.ok) {
+          throw new Error("Failed to fetch ministry listings");
+        }
+
+        const data = await response.json();
+        const listings = Array.isArray(data) ? data : [];
+
+        setStats({
+          pending: listings.filter(
+            (listing) => normalizeStatus(listing) === "pending",
+          ).length,
+          approved: listings.filter(
+            (listing) => normalizeStatus(listing) === "approved",
+          ).length,
+          rejected: listings.filter(
+            (listing) => normalizeStatus(listing) === "rejected",
+          ).length,
+        });
+
+        setRecentApprovals(
+          listings
+            .filter((listing) => normalizeStatus(listing) === "pending")
+            .slice(0, 3),
+        );
+      } catch (error) {
+        console.error(error);
+
+        const fallbackListings = JSON.parse(
+          localStorage.getItem("land_listings") || "[]",
+        );
+
+        setStats({
+          pending: fallbackListings.filter(
+            (listing) => normalizeStatus(listing) === "pending",
+          ).length,
+          approved: fallbackListings.filter(
+            (listing) => normalizeStatus(listing) === "approved",
+          ).length,
+          rejected: fallbackListings.filter(
+            (listing) => normalizeStatus(listing) === "rejected",
+          ).length,
+        });
+
+        setRecentApprovals(
+          fallbackListings
+            .filter((listing) => normalizeStatus(listing) === "pending")
+            .slice(0, 3),
+        );
+      }
+    };
+
+    fetchDashboardListings();
   }, []);
 
   const statCards = [

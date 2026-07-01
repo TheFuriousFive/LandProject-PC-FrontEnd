@@ -2,52 +2,140 @@
 //worked with local storage
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Check, X, FileText, Info, FileSearch, ExternalLink } from "lucide-react";
+import {
+  Check,
+  X,
+  FileText,
+  Info,
+  FileSearch,
+  ExternalLink,
+} from "lucide-react";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export default function PendingApprovals() {
   const [listings, setListings] = useState([]);
   const [activeTabs, setActiveTabs] = useState({});
 
-  useEffect(() => {
-    const allListings = JSON.parse(
-      localStorage.getItem("land_listings") || "[]",
-    );
-    const pendingListings = allListings.filter((l) => l.status === "pending");
-    setListings(pendingListings);
+  const normalizeStatus = (listing) =>
+    String(
+      listing?.status ||
+        listing?.verification_status ||
+        listing?.verificationStatus ||
+        "",
+    ).toLowerCase();
 
-    const tabDefaults = pendingListings.reduce((acc, listing) => {
-      // Default each card to documents view for verification-first workflow.
-      acc[listing.id] = "documents";
-      return acc;
-    }, {});
-    setActiveTabs(tabDefaults);
+  useEffect(() => {
+    const fetchPendingListings = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_BASE}/api/listings/pending`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch pending listings");
+        }
+
+        const data = await response.json();
+        const pendingListings = (Array.isArray(data) ? data : []).filter(
+          (listing) => normalizeStatus(listing) === "pending",
+        );
+
+        setListings(pendingListings);
+
+        const tabDefaults = pendingListings.reduce((acc, listing) => {
+          // Default each card to documents view for verification-first workflow.
+          acc[listing.id] = "documents";
+          return acc;
+        }, {});
+        setActiveTabs(tabDefaults);
+      } catch (error) {
+        console.error(error);
+
+        const allListings = JSON.parse(
+          localStorage.getItem("land_listings") || "[]",
+        );
+        const pendingListings = allListings.filter(
+          (listing) => normalizeStatus(listing) === "pending",
+        );
+        setListings(pendingListings);
+
+        const tabDefaults = pendingListings.reduce((acc, listing) => {
+          // Default each card to documents view for verification-first workflow.
+          acc[listing.id] = "documents";
+          return acc;
+        }, {});
+        setActiveTabs(tabDefaults);
+      }
+    };
+
+    fetchPendingListings();
   }, []);
 
-  const handleAction = (id, action) => {
+  const handleAction = async (id, action) => {
     if (confirm(`Are you sure you want to ${action} this listing?`)) {
-      const allListings = JSON.parse(
-        localStorage.getItem("land_listings") || "[]",
-      );
-      const updated = allListings.map((l) =>
-        l.id === id ? { ...l, status: action } : l,
-      );
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_BASE}/api/listings/verify-land`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({
+            listingId: id,
+            landListingId: id,
+            approved: action === "approved",
+          }),
+        });
 
-      localStorage.setItem("land_listings", JSON.stringify(updated));
-      setListings(listings.filter((l) => l.id !== id));
+        if (!response.ok) {
+          throw new Error("Failed to update listing status");
+        }
 
-      // We could add to owner logs here, mocking a backend trigger
-      const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
-      const targetListing = allListings.find((l) => l.id === id);
-      const logAction =
-        action === "approved" ? "Approved by Ministry" : "Rejected by Ministry";
-      logs.unshift({
-        // eslint-disable-next-line react-hooks/purity
-        id: Date.now(),
-        action: logAction,
-        target: targetListing.title,
-        date: new Date().toISOString(),
-      });
-      localStorage.setItem("owner_logs", JSON.stringify(logs));
+        setListings((prev) => prev.filter((listing) => listing.id !== id));
+        setActiveTabs((prev) => {
+          const nextTabs = { ...prev };
+          delete nextTabs[id];
+          return nextTabs;
+        });
+      } catch (error) {
+        console.error(error);
+
+        const allListings = JSON.parse(
+          localStorage.getItem("land_listings") || "[]",
+        );
+        const updated = allListings.map((listing) =>
+          listing.id === id ? { ...listing, status: action } : listing,
+        );
+
+        localStorage.setItem("land_listings", JSON.stringify(updated));
+        setListings((prev) => prev.filter((listing) => listing.id !== id));
+        setActiveTabs((prev) => {
+          const nextTabs = { ...prev };
+          delete nextTabs[id];
+          return nextTabs;
+        });
+
+        // We could add to owner logs here, mocking a backend trigger
+        const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");
+        const targetListing = allListings.find((listing) => listing.id === id);
+        const logAction =
+          action === "approved"
+            ? "Approved by Ministry"
+            : "Rejected by Ministry";
+        logs.unshift({
+          id: Date.now(),
+          action: logAction,
+          target: targetListing?.title || "Unknown listing",
+          date: new Date().toISOString(),
+        });
+        localStorage.setItem("owner_logs", JSON.stringify(logs));
+      }
     }
   };
 
@@ -75,7 +163,8 @@ export default function PendingApprovals() {
   };
 
   const getDocuments = (land) => {
-    if (Array.isArray(land.land_listing_documents)) return land.land_listing_documents;
+    if (Array.isArray(land.land_listing_documents))
+      return land.land_listing_documents;
     if (Array.isArray(land.documents)) return land.documents;
     return [];
   };
@@ -133,15 +222,21 @@ export default function PendingApprovals() {
                       <p className="text-gray-500 font-semibold mb-1">
                         Location
                       </p>
-                      <p className="font-bold text-gray-900">{getLocationLabel(land)}</p>
+                      <p className="font-bold text-gray-900">
+                        {getLocationLabel(land)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 font-semibold mb-1">Size</p>
-                      <p className="font-bold text-gray-900">{getAreaLabel(land)}</p>
+                      <p className="font-bold text-gray-900">
+                        {getAreaLabel(land)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 font-semibold mb-1">Price</p>
-                      <p className="font-bold text-gray-900">{getPriceLabel(land)}</p>
+                      <p className="font-bold text-gray-900">
+                        {getPriceLabel(land)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 font-semibold mb-1">Zoning</p>
@@ -214,7 +309,9 @@ export default function PendingApprovals() {
                               </p>
                               <p className="font-bold text-gray-900">
                                 {land.posted_date
-                                  ? new Date(land.posted_date).toLocaleDateString()
+                                  ? new Date(
+                                      land.posted_date,
+                                    ).toLocaleDateString()
                                   : "N/A"}
                               </p>
                             </div>
@@ -229,9 +326,14 @@ export default function PendingApprovals() {
                           ) : (
                             getDocuments(land).map((doc, index) => {
                               const fileName =
-                                doc.file_name || doc.name || `Document ${index + 1}`;
+                                doc.file_name ||
+                                doc.name ||
+                                `Document ${index + 1}`;
                               const fileUrl =
-                                doc.file_url || doc.url || doc.document_url || doc.path;
+                                doc.file_url ||
+                                doc.url ||
+                                doc.document_url ||
+                                doc.path;
                               const isPdf =
                                 /\.pdf($|\?)/i.test(fileName) ||
                                 /\.pdf($|\?)/i.test(fileUrl || "");

@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 
-export default function ContactInquiryCard({ ownerName = "Owner" }) {
+export default function ContactInquiryCard({
+  ownerName = "Owner",
+  listingId = null,
+}) {
   const firstName = ownerName.split(" ")[0] || ownerName;
 
   const [contactForm, setContactForm] = useState({
@@ -11,18 +14,57 @@ export default function ContactInquiryCard({ ownerName = "Owner" }) {
     email: "",
     message: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e) => {
     e.preventDefault();
-    alert(`Inquiry sent to ${ownerName}.`);
-    setContactForm({ name: "", phone: "", email: "", message: "" });
+
+    if (listingId) {
+      setIsSubmitting(true);
+      try {
+        const token = (localStorage.getItem("token") || "")
+          .replace(/^"|"$/g, "")
+          .trim();
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/landapp/investors/listings/${listingId}/inquiry`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            // The inquire endpoint does not expect a body according to the backend code provided:
+            // @PostMapping("/listings/{listingId}/inquiry")
+            // public ResponseEntity<String> inquire(@PathVariable Long listingId)
+          },
+        );
+
+        if (res.ok) {
+          alert(`Inquiry sent to ${ownerName}.`);
+          setContactForm({ name: "", phone: "", email: "", message: "" });
+        } else {
+          alert("Failed to send inquiry.");
+        }
+      } catch (err) {
+        console.error("Error sending inquiry:", err);
+        alert("Error sending inquiry.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      // Fallback
+      alert(`Inquiry sent to ${ownerName}.`);
+      setContactForm({ name: "", phone: "", email: "", message: "" });
+    }
   };
 
   return (
     <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="px-6 pt-6 pb-4 border-b border-gray-100">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-xl font-extrabold text-gray-900">Meet {ownerName}</h3>
+          <h3 className="text-xl font-extrabold text-gray-900">
+            Meet {ownerName}
+          </h3>
           <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 border border-green-200 px-3 py-1 text-xs font-bold uppercase tracking-wide">
             Verified Seller
           </span>
@@ -122,9 +164,10 @@ export default function ContactInquiryCard({ ownerName = "Owner" }) {
 
         <button
           type="submit"
-          className="w-full rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 transition-colors"
+          disabled={isSubmitting}
+          className="w-full rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Contact {firstName}
+          {isSubmitting ? "Sending..." : `Contact ${firstName}`}
         </button>
       </form>
     </section>

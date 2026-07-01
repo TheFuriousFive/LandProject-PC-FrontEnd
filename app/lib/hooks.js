@@ -342,6 +342,7 @@ export function useAuth() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // eslint-disable-next-line
       setUser({
         role: localStorage.getItem("userRole") || "investor",
       });

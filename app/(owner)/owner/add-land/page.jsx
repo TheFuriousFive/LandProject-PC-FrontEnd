@@ -161,6 +161,9 @@ export default function AddNewLand() {
 
         if (!ownerId) {
           console.error("Owner ID could not be extracted from:", loggedInUser);
+          alert("Unable to determine your owner account. Please log in again.");
+          setIsSubmitting(false);
+          return;
         }
       }
 
@@ -229,7 +232,32 @@ export default function AddNewLand() {
       });
 
       if (!response.ok) {
-        throw new Error((await response.text()) || "Failed to create listing");
+        const raw = await response.text();
+        let message = "Failed to create listing";
+        try {
+          const parsed = JSON.parse(raw);
+          message =
+            parsed.message ||
+            parsed.error ||
+            parsed.description ||
+            JSON.stringify(parsed);
+        } catch (e) {
+          if (raw && raw !== "") message = raw;
+        }
+        console.error("Create listing failed:", response.status, raw);
+        // Expose debug info to window for easier inspection during development
+        try {
+          // eslint-disable-next-line no-undef
+          window.__lastCreateListingDebug = {
+            status: response.status,
+            raw,
+            request: newListing,
+          };
+        } catch (e) {}
+        throw new Error(
+          (message || `Failed to create listing`) +
+            ` (status ${response.status})`,
+        );
       }
 
       // Add to logs

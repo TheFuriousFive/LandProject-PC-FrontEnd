@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Share2, Heart, Star } from "lucide-react";
+import { Share2, Heart, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import LocationMap from "@/_modules/geospatial/LocationMap";
 import TrustScoreDisplay from "@/_modules/trustScore/TrustScoreDisplay";
@@ -20,6 +20,37 @@ export default function PropertyDetailsPage() {
 
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: property?.title || "Property Details",
+          text: property?.description || "Check out this property!",
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.error("Error sharing:", error);
+      }
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert("Link copied to clipboard!");
+    }
+  };
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prevList) =>
+      prevList === 0 ? property.images.length - 1 : prevList - 1,
+    );
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prevList) =>
+      prevList === property.images.length - 1 ? 0 : prevList + 1,
+    );
+  };
 
   useEffect(() => {
     const fetchPropertyData = async () => {
@@ -36,14 +67,38 @@ export default function PropertyDetailsPage() {
           ...(token && { Authorization: `Bearer ${token}` }),
         };
 
-        // Fetch base property details
+        // Fetch base property details (using search since it's the specified endpoint for investors to see listings)
         const propertyRes = await fetch(
-          `${API_BASE}/api/listings/${params.propertyId}`,
+          `${API_BASE}/landapp/investors/search`,
           { headers },
         );
-        if (!propertyRes.ok)
+        if (!propertyRes.ok) {
+          console.error(
+            "Fetch property details error status:",
+            propertyRes.status,
+            propertyRes.statusText,
+          );
           throw new Error("Failed to fetch property details");
-        let propertyData = await propertyRes.json();
+        }
+        const allProperties = await propertyRes.json();
+
+        let propertyData = Array.isArray(allProperties)
+          ? allProperties.find(
+              (p) => String(p.id) === String(params.propertyId),
+            )
+          : allProperties;
+
+        if (!propertyData) {
+          throw new Error("Property not found in search results");
+        }
+
+        const normalizedStatus = String(
+          propertyData.status || propertyData.verificationStatus || "",
+        ).toLowerCase();
+
+        if (normalizedStatus !== "approved") {
+          throw new Error("Property not found in search results");
+        }
 
         // Ensure default structure so UI won't crash while mapping
         propertyData = {
@@ -180,68 +235,94 @@ export default function PropertyDetailsPage() {
       <div className="max-w-7xl mx-auto px-4">
         <PropertyPageHeader role={user?.role} property={property} />
 
-        <div className="bg-white border border-gray-200 rounded-2xl px-4 py-4 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <Link
-              href={`/owners/${property.owner.id}`}
-              className="group flex items-center gap-3 rounded-xl hover:bg-gray-50 p-2 -m-2 transition-colors w-fit"
-            >
-              <img
-                src={property.owner.avatar}
-                alt={property.owner.name}
-                className="w-12 h-12 rounded-full object-cover border border-gray-200"
-              />
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                  Listing Owner
-                </p>
-                <p className="text-lg font-bold text-gray-900 group-hover:underline">
-                  {property.owner.name}
-                </p>
-              </div>
-            </Link>
-
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-4 py-2 w-fit">
-              <Star size={16} className="text-amber-500 fill-amber-500" />
-              <span className="text-sm font-bold text-amber-700">
-                {avgOwnerRating} / 5.0 owner rating
-              </span>
-              <span className="text-xs font-semibold text-amber-600">
-                ({property.reviews.length} reviews)
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Header with Images */}
         <div className="mb-8">
-          <div className="relative rounded-2xl overflow-hidden mb-4 h-96 bg-gray-200">
+          <div className="relative rounded-2xl overflow-hidden mb-4 h-96 bg-gray-200 group">
             <img
-              src={property.images[0]}
+              src={property.images ? property.images[currentImageIndex] : ""}
               alt={property.title}
-              className="w-full h-full object-cover hover:scale-105 transition-transform"
+              className="w-full h-full object-cover transition-opacity duration-300"
             />
+
+            {/* Navigation Arrows */}
+            {property.images && property.images.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={handleNextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </>
+            )}
+
+            {/* Top Right Action Buttons */}
             <div className="absolute top-4 right-4 flex gap-2">
-              <button className="bg-white rounded-full p-3 hover:bg-gray-100 shadow-lg">
+              <button
+                onClick={handleShare}
+                className="bg-white rounded-full p-3 hover:bg-gray-100 shadow-lg transition-transform hover:scale-105"
+              >
                 <Share2 size={20} className="text-gray-700" />
               </button>
-              <button className="bg-white rounded-full p-3 hover:bg-gray-100 shadow-lg">
-                <Heart size={20} className="text-gray-700" />
+              <button
+                onClick={() => setIsLiked(!isLiked)}
+                className="bg-white rounded-full p-3 hover:bg-gray-100 shadow-lg transition-transform hover:scale-105"
+              >
+                <Heart
+                  size={20}
+                  className={`${
+                    isLiked ? "fill-red-500 text-red-500" : "text-gray-700"
+                  } transition-colors`}
+                />
               </button>
             </div>
+
+            {/* Image Indicators */}
+            {property.images && property.images.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                {property.images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${
+                      currentImageIndex === idx
+                        ? "bg-white w-4"
+                        : "bg-white/50 hover:bg-white/75"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Gallery */}
-          <div className="grid grid-cols-4 gap-3">
-            {property.images.map((img, idx) => (
-              <img
-                key={idx}
-                src={img}
-                alt={`Property ${idx}`}
-                className="w-full h-20 object-cover rounded-lg cursor-pointer hover:opacity-75 transition"
-              />
-            ))}
-          </div>
+          {property.images && property.images.length > 1 && (
+            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+              {property.images.map((img, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setCurrentImageIndex(idx)}
+                  className={`relative cursor-pointer rounded-lg overflow-hidden h-20 ${
+                    currentImageIndex === idx
+                      ? "ring-2 ring-primary border-2 border-green-500"
+                      : "opacity-75 hover:opacity-100"
+                  } transition-all`}
+                >
+                  <img
+                    src={img}
+                    alt={`Property image ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Main Content Grid */}
@@ -356,24 +437,23 @@ export default function PropertyDetailsPage() {
                     </button>
                   </div>
                 ))}
-              </div>
+              </div> 
             </div> */}
 
             {/* Q&A Section */}
-            <QASection
-              questions={property.questions}
-              listingId={property.id}
-              ownerId={property.owner.id}
-            />
+            <QASection listingId={property.id} ownerId={property.owner?.id} />
 
             {/* Reviews */}
             <ReviewSection
+              listingId={property.id}
               reviews={property.reviews}
               avgRating={
-                property.reviews.reduce((sum, r) => sum + r.rating, 0) /
-                property.reviews.length
+                property.reviews?.length
+                  ? property.reviews.reduce((sum, r) => sum + r.rating, 0) /
+                    property.reviews.length
+                  : 0
               }
-              totalReviews={property.reviews.length}
+              totalReviews={property.reviews?.length || 0}
             />
           </div>
 
@@ -382,7 +462,10 @@ export default function PropertyDetailsPage() {
             {/* Trust Score */}
             <TrustScoreDisplay listingData={property} />
 
-            <ContactInquiryCard ownerName={property.owner.name} />
+            <ContactInquiryCard
+              ownerName={property.owner?.name}
+              listingId={property.id}
+            />
           </div>
         </div>
       </div>

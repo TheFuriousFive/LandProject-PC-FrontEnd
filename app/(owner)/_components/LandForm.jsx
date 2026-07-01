@@ -212,7 +212,7 @@ export default function LandForm({
       };
 
       let requestBody;
-      
+
       // The backend PUT endpoint expects application/json, not multipart/form-data
       if (mode === "edit") {
         headers["Content-Type"] = "application/json";
@@ -228,7 +228,20 @@ export default function LandForm({
       });
 
       if (!response.ok) {
-        throw new Error((await response.text()) || `Failed to ${mode} listing`);
+        const raw = await response.text();
+        // Expose debug info to window for easier inspection during development
+        try {
+          // eslint-disable-next-line no-undef
+          window.__lastCreateListingDebug = {
+            status: response.status,
+            raw,
+            request: listingPayload,
+          };
+        } catch (e) {}
+        throw new Error(
+          (raw && raw !== "" ? raw : `Failed to ${mode} listing`) +
+            ` (status ${response.status})`,
+        );
       }
 
       const logs = JSON.parse(localStorage.getItem("owner_logs") || "[]");

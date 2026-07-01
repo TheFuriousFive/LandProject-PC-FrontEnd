@@ -7,7 +7,7 @@ export const USER_ROLES = {
   INVESTOR: "investor",
   OWNER: "owner",
   MINISTRY: "ministry",
-  ADMIN: "admin",
+  ADMIN: "authenticator",
 };
 
 // Property Status

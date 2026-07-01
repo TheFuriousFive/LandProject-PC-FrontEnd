@@ -10,6 +10,16 @@ export default function BrowseListings() {
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
+  const isApprovedListing = (listing) => {
+    const status = String(
+      listing?.status ||
+        listing?.verificationStatus ||
+        listing?.verification_status ||
+        "",
+    ).toLowerCase();
+    return status === "approved";
+  };
+
   // Fitler states
   const [filters, setFilters] = useState({
     keyword: "",
@@ -34,7 +44,7 @@ export default function BrowseListings() {
         // According to instructions, use the endpoint mapping: /land-listings or /landapp/investors/search
         // This targets the specific Spring Boot @GetMapping("/search") from instructions
         // We will default hit this endpoint and parse JSON.
-        const response = await fetch(`${API_BASE}/api/listings`, {
+        const response = await fetch(`${API_BASE}/landapp/investors/search`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -42,12 +52,21 @@ export default function BrowseListings() {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to fetch listings from network.");
+          console.error(
+            "Browse listings network error:",
+            response.status,
+            response.statusText,
+          );
+          throw new Error(
+            `Failed to fetch listings from network: ${response.status}`,
+          );
         }
 
         const data = await response.json();
-        console.log(data);
-        setListings(Array.isArray(data) ? data : []);
+        const approvedListings = Array.isArray(data)
+          ? data.filter((listing) => isApprovedListing(listing))
+          : [];
+        setListings(approvedListings);
       } catch (error) {
         console.error(
           "Fetch failed, potentially backend isn't ready. Falling back to structured mock data for UI:",
@@ -65,7 +84,7 @@ export default function BrowseListings() {
             location: "Iowa, IA",
             landType: "Agricultural",
             verificationStatus: "VERIFIED",
-            status: "active",
+            status: "approved",
             osmLandUse: "Farmland",
             imageUrls: [
               "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800&auto=format&fit=crop",
@@ -80,7 +99,7 @@ export default function BrowseListings() {
             location: "Texas, TX",
             landType: "Mixed Use",
             verificationStatus: "VERIFIED",
-            status: "active",
+            status: "approved",
             osmLandUse: "Meadow",
             imageUrls: [
               "https://images.unsplash.com/photo-1492617519907-e0f71f7c76fc?q=80&w=800&auto=format&fit=crop",
@@ -95,7 +114,7 @@ export default function BrowseListings() {
             location: "Oregon, OR",
             landType: "Residential",
             verificationStatus: "UNVERIFIED",
-            status: "active",
+            status: "approved",
             osmLandUse: "Forest",
             imageUrls: [
               "https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800&auto=format&fit=crop",

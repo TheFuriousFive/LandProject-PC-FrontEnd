@@ -3,14 +3,18 @@
 import { useMemo, useState } from "react";
 import ReviewCard from "./ReviewCard";
 import { Star } from "lucide-react";
+import { useAuth } from "@/lib/hooks";
 
 export default function ReviewSection({
+  listingId,
   reviews = [],
   avgRating = 0,
   totalReviews = 0,
 }) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("reviews");
-  const [localReviews, setLocalReviews] = useState(reviews);
+  const [localReviews, setLocalReviews] = useState(reviews || []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     author: "",
     rating: 5,
@@ -20,22 +24,39 @@ export default function ReviewSection({
   const computedAvgRating = useMemo(() => {
     if (localReviews.length === 0) return avgRating || 0;
     return (
-      localReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) /
-      localReviews.length
+      localReviews.reduce(
+        (sum, review) => sum + Number(review.rating || 0),
+        0,
+      ) / localReviews.length
     );
   }, [localReviews, avgRating]);
 
   const computedTotalReviews = localReviews.length || totalReviews;
 
   const ratingDistribution = [
-    { stars: 5, count: localReviews.filter((r) => Number(r.rating) === 5).length },
-    { stars: 4, count: localReviews.filter((r) => Number(r.rating) === 4).length },
-    { stars: 3, count: localReviews.filter((r) => Number(r.rating) === 3).length },
-    { stars: 2, count: localReviews.filter((r) => Number(r.rating) === 2).length },
-    { stars: 1, count: localReviews.filter((r) => Number(r.rating) === 1).length },
+    {
+      stars: 5,
+      count: localReviews.filter((r) => Number(r.rating) === 5).length,
+    },
+    {
+      stars: 4,
+      count: localReviews.filter((r) => Number(r.rating) === 4).length,
+    },
+    {
+      stars: 3,
+      count: localReviews.filter((r) => Number(r.rating) === 3).length,
+    },
+    {
+      stars: 2,
+      count: localReviews.filter((r) => Number(r.rating) === 2).length,
+    },
+    {
+      stars: 1,
+      count: localReviews.filter((r) => Number(r.rating) === 1).length,
+    },
   ];
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
 
     if (!reviewForm.author.trim() || !reviewForm.comment.trim()) {
@@ -43,26 +64,79 @@ export default function ReviewSection({
       return;
     }
 
-    const newReview = {
-      id: `local-review-${Date.now()}`,
-      author: reviewForm.author.trim(),
+    const payload = {
       rating: Number(reviewForm.rating),
-      date: new Date().toISOString(),
-      comment: reviewForm.comment.trim(),
-      aspects: [
-        `Honesty: ${Number(reviewForm.rating)}/5`,
-        `Transaction speed: ${Number(reviewForm.rating)}/5`,
-      ],
+      reviewText: reviewForm.comment.trim(),
     };
 
-    setLocalReviews((prev) => [newReview, ...prev]);
-    setReviewForm({ author: "", rating: 5, comment: "" });
-    setActiveTab("reviews");
+    if (listingId) {
+      setIsSubmitting(true);
+      try {
+        const token = (localStorage.getItem("token") || "")
+          .replace(/^"|"$/g, "")
+          .trim();
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/landapp/investors/listings/${listingId}/reviews`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+
+        if (res.ok) {
+          const newReview = {
+            id: `local-review-${Date.now()}`,
+            author: reviewForm.author.trim(),
+            rating: Number(reviewForm.rating),
+            date: new Date().toISOString(),
+            comment: reviewForm.comment.trim(),
+            aspects: [
+              `Honesty: ${Number(reviewForm.rating)}/5`,
+              `Transaction speed: ${Number(reviewForm.rating)}/5`,
+            ],
+          };
+
+          setLocalReviews((prev) => [newReview, ...prev]);
+          setReviewForm({ author: "", rating: 5, comment: "" });
+          setActiveTab("reviews");
+        } else {
+          alert("Failed to submit review.");
+        }
+      } catch (err) {
+        console.error("Error submitting review:", err);
+        alert("Error submitting review.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      // Fallback for when listingId is not provided
+      const newReview = {
+        id: `local-review-${Date.now()}`,
+        author: reviewForm.author.trim(),
+        rating: Number(reviewForm.rating),
+        date: new Date().toISOString(),
+        comment: reviewForm.comment.trim(),
+        aspects: [
+          `Honesty: ${Number(reviewForm.rating)}/5`,
+          `Transaction speed: ${Number(reviewForm.rating)}/5`,
+        ],
+      };
+
+      setLocalReviews((prev) => [newReview, ...prev]);
+      setReviewForm({ author: "", rating: 5, comment: "" });
+      setActiveTab("reviews");
+    }
   };
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Community Reviews</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        Community Reviews
+      </h2>
 
       <div className="flex items-center gap-2 mb-6 border-b border-gray-200 pb-3">
         <button
@@ -76,17 +150,20 @@ export default function ReviewSection({
         >
           Reviews
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("write")}
-          className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
-            activeTab === "write"
-              ? "bg-gray-900 text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          Write a Review
-        </button>
+
+        {user?.role !== "owner" && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("write")}
+            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
+              activeTab === "write"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Write a Review
+          </button>
+        )}
       </div>
 
       {computedTotalReviews > 0 ? (
@@ -108,13 +185,17 @@ export default function ReviewSection({
                 />
               ))}
             </div>
-            <p className="text-gray-500">Based on {computedTotalReviews} reviews</p>
+            <p className="text-gray-500">
+              Based on {computedTotalReviews} reviews
+            </p>
           </div>
 
           <div className="space-y-2">
             {ratingDistribution.map((dist) => (
               <div key={dist.stars} className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-gray-600 w-8">{dist.stars}★</span>
+                <span className="text-sm font-semibold text-gray-600 w-8">
+                  {dist.stars}★
+                </span>
                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-yellow-400 transition-all"
@@ -130,7 +211,9 @@ export default function ReviewSection({
         </div>
       ) : (
         <div className="text-center py-8 mb-8 border-b border-gray-200">
-          <p className="text-gray-500">No reviews yet. Be the first to review this property!</p>
+          <p className="text-gray-500">
+            No reviews yet. Be the first to review this property!
+          </p>
         </div>
       )}
 
@@ -142,19 +225,26 @@ export default function ReviewSection({
                 <ReviewCard review={review} />
                 {review.ownerReply && (
                   <div className="mt-2">
-                    <ReviewCard review={review.ownerReply} isOwnerReply={true} />
+                    <ReviewCard
+                      review={review.ownerReply}
+                      isOwnerReply={true}
+                    />
                   </div>
                 )}
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500 py-4">No reviews to display</p>
+            <p className="text-center text-gray-500 py-4">
+              No reviews to display
+            </p>
           )}
         </div>
-      ) : (
+      ) : user?.role !== "owner" ? (
         <form onSubmit={handleSubmitReview} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Name</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Name
+            </label>
             <input
               type="text"
               value={reviewForm.author}
@@ -168,11 +258,16 @@ export default function ReviewSection({
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Rating</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Rating
+            </label>
             <select
               value={reviewForm.rating}
               onChange={(e) =>
-                setReviewForm((prev) => ({ ...prev, rating: Number(e.target.value) }))
+                setReviewForm((prev) => ({
+                  ...prev,
+                  rating: Number(e.target.value),
+                }))
               }
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200"
             >
@@ -185,7 +280,9 @@ export default function ReviewSection({
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Review</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Review
+            </label>
             <textarea
               value={reviewForm.comment}
               onChange={(e) =>
@@ -200,12 +297,13 @@ export default function ReviewSection({
 
           <button
             type="submit"
-            className="w-full bg-[#9afb21] text-black hover:bg-[#8aec1b] font-bold py-3 rounded-lg transition-colors"
+            disabled={isSubmitting}
+            className="w-full bg-[#9afb21] text-black hover:bg-[#8aec1b] font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
           >
-            Submit Review
+            {isSubmitting ? "Submitting..." : "Submit Review"}
           </button>
         </form>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -240,10 +240,23 @@ export default function QASection({ listingId, ownerId }) {
                         )}
                       </div>
                       <p className="text-gray-700">
-                        {ans.content ||
-                          ans.message ||
-                          ans.answer ||
-                          (typeof ans === "string" ? ans : "")}
+                        {typeof ans.content === "string"
+                          ? ans.content
+                          : typeof ans.content === "object" &&
+                              ans.content !== null &&
+                              typeof ans.content.content === "string"
+                            ? ans.content.content
+                            : typeof ans.message === "string"
+                              ? ans.message
+                              : typeof ans.answer === "string"
+                                ? ans.answer
+                                : typeof ans.answer === "object" &&
+                                    ans.answer !== null &&
+                                    typeof ans.answer.content === "string"
+                                  ? ans.answer.content
+                                  : typeof ans === "string"
+                                    ? ans
+                                    : ""}
                       </p>
                     </div>
                   ))}
