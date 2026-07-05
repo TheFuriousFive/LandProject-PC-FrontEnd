@@ -9,9 +9,7 @@ export default function Home() {
   return (
     <div className="min-h-screen overflow-hidden bg-[#F9FAFB] pb-1 md:min-w-5xl lg:min-w-7xl">
       <Header />
-      <div className="px-6 py-4">
-        <BackButton />
-      </div>
+
       <HeroSection />
       <WhyTerraVest />
     </div>
