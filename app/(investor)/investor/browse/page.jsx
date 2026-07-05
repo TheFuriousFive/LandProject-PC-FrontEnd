@@ -34,39 +34,36 @@ export default function BrowseListings() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-        let token = "";
-        if (typeof window !== "undefined") {
-          const rawToken = localStorage.getItem("token") || "";
-          token = rawToken.replace(/^"|"$/g, "").trim();
-        }
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+      let token = "";
+      if (typeof window !== "undefined") {
+        const rawToken = localStorage.getItem("token") || "";
+        token = rawToken.replace(/^"|"$/g, "").trim();
+      }
 
-        // According to instructions, use the endpoint mapping: /land-listings or /landapp/investors/search
-        // This targets the specific Spring Boot @GetMapping("/search") from instructions
-        // We will default hit this endpoint and parse JSON.
-        const response = await fetch(`${API_BASE}/landapp/investors/search`, {
-          headers: {
-            "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
-        });
+      // FIXED: Pointing to LandListingController instead of InvestorController
+      const response = await fetch(`${API_BASE}/api/listings/approved`, {
+        headers: {
+          "Content-Type": "application/json",
+          // Note: If /api/listings/approved is public in your Spring Security config,
+          // they might not even need to send this token.
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
 
-        if (!response.ok) {
-          console.error(
-            "Browse listings network error:",
-            response.status,
-            response.statusText,
-          );
-          throw new Error(
-            `Failed to fetch listings from network: ${response.status}`,
-          );
-        }
+      if (!response.ok) {
+        console.error("Browse listings network error:", response.status, response.statusText);
+        throw new Error(`Failed to fetch listings from network: ${response.status}`);
+      }
 
-        const data = await response.json();
-        const approvedListings = Array.isArray(data)
-          ? data.filter((listing) => isApprovedListing(listing))
-          : [];
-        setListings(approvedListings);
+      const data = await response.json();
+      
+      // FIXED: The backend already filters for '/approved', so we just set the data directly.
+      // We ensure it's an array to prevent UI crashes if the API returns an unexpected shape.
+      setListings(Array.isArray(data) ? data : []);
+      
+      
+      
       } catch (error) {
         console.error(
           "Fetch failed, potentially backend isn't ready. Falling back to structured mock data for UI:",
