@@ -1,14 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  Home,
-  Compass,
-  Heart,
-  Calendar,
-  User,
-  LogOut,
-} from "lucide-react";
+import { Home, Compass, Heart, Calendar, User, LogOut } from "lucide-react";
 
 export default function InvestorSidebar() {
   const pathname = usePathname();
@@ -26,10 +19,13 @@ export default function InvestorSidebar() {
   };
 
   const navItems = [
-    { name: "Dashboard", href: "/investor", icon: Home },
-    { name: "Browse Listings", href: "/investor/browse", icon: Compass },
+    { name: "Browse Listings", href: "/investor", icon: Compass },
     { name: "Favorites", href: "/investor/favorites", icon: Heart },
-    { name: "Appointment Responses", href: "/investor/appointments", icon: Calendar },
+    {
+      name: "Appointment Responses",
+      href: "/investor/appointments",
+      icon: Calendar,
+    },
     { name: "Profile", href: "/investor/profile", icon: User },
   ];
 
