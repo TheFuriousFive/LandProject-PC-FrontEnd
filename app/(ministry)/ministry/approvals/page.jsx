@@ -231,12 +231,13 @@ export default function PendingApprovals() {
     return land.price || "N/A";
   };
 
+  // 1. Update the getter to look for your backend DTO's exact variable name
   const getDocuments = (land) => {
-    if (Array.isArray(land.land_listing_documents))
-      return land.land_listing_documents;
+    if (Array.isArray(land.deedDocumentUrls)) return land.deedDocumentUrls;
     if (Array.isArray(land.documents)) return land.documents;
     return [];
   };
+
 
   return (
     <div className="p-8 md:p-12 max-w-6xl mx-auto">
@@ -393,63 +394,63 @@ export default function PendingApprovals() {
                               No submitted documents found for this listing.
                             </div>
                           ) : (
-                            getDocuments(land).map((doc, index) => {
-                              const fileName =
-                                doc.file_name ||
-                                doc.name ||
-                                `Document ${index + 1}`;
-                              const fileUrl =
-                                doc.file_url ||
-                                doc.url ||
-                                doc.document_url ||
-                                doc.path;
-                              const isPdf =
-                                /\.pdf($|\?)/i.test(fileName) ||
-                                /\.pdf($|\?)/i.test(fileUrl || "");
+                 
+
+                                                      getDocuments(land).map((doc, index) => {
+                              // FIXED: Check if 'doc' is a string. If it is, use it directly!
+                              const fileUrl = typeof doc === 'string' 
+                                  ? doc 
+                                  : (doc?.file_url || doc?.url || doc?.document_url || doc?.path);
+                                  
+                              // FIXED: Give it a clean name since it's just a raw URL string
+                              const fileName = `Deed Document ${index + 1}`; 
+                              
+                              // Check if it's a PDF (Supabase URLs usually end in .pdf or have it in the path)
+                              const isPdf = /\.pdf($|\?)/i.test(fileUrl || "");
 
                               return (
-                                <div
-                                  key={`${land.id}-doc-${index}`}
-                                  className="p-3 rounded-lg bg-gray-50 border border-gray-100"
-                                >
-                                  <p className="font-semibold text-gray-900 text-sm">
-                                    {fileName}
-                                  </p>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    {doc.description ||
-                                      "No document description provided."}
-                                  </p>
+                                  <div
+                                    key={`${land.id}-doc-${index}`}
+                                    className="p-3 rounded-lg bg-gray-50 border border-gray-100"
+                                  >
+                                    <p className="font-semibold text-gray-900 text-sm">
+                                      {fileName}
+                                    </p>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                      Official land deed document submitted by owner.
+                                    </p>
 
-                                  {isPdf && fileUrl ? (
-                                    <a
-                                      href={fileUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="inline-flex mt-3 items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3 py-2 transition-colors"
-                                    >
-                                      Open PDF
-                                    </a>
-                                  ) : fileUrl ? (
-                                    <a
-                                      href={fileUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="inline-flex mt-3 items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold px-3 py-2 transition-colors"
-                                    >
-                                      Open File
-                                    </a>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      disabled
-                                      className="inline-flex mt-3 items-center justify-center rounded-lg bg-gray-200 text-gray-500 text-sm font-semibold px-3 py-2 cursor-not-allowed"
-                                    >
-                                      PDF unavailable
-                                    </button>
-                                  )}
-                                </div>
+                                    {isPdf && fileUrl ? (
+                                      <a
+                                        href={fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex mt-3 items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3 py-2 transition-colors"
+                                      >
+                                        Open PDF
+                                      </a>
+                                    ) : fileUrl ? (
+                                      <a
+                                        href={fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex mt-3 items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold px-3 py-2 transition-colors"
+                                      >
+                                        Open File
+                                      </a>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        disabled
+                                        className="inline-flex mt-3 items-center justify-center rounded-lg bg-gray-200 text-gray-500 text-sm font-semibold px-3 py-2 cursor-not-allowed"
+                                      >
+                                        PDF unavailable
+                                      </button>
+                                    )}
+                                  </div>
                               );
-                            })
+                          })
+                            
                           )}
                         </div>
                       )}
