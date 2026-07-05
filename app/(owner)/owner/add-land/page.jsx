@@ -187,7 +187,7 @@ export default function AddNewLand() {
           submitFormData.append("images", file);
         });
       }
-
+// 1. SEND THE FORM DATA TO CREATE THE LISTING
       const response = await fetch(`${API_BASE}/landapp/owners/listings`, {
         method: "POST",
         headers: {
@@ -208,14 +208,47 @@ export default function AddNewLand() {
         throw new Error(`${message} (status ${response.status})`);
       }
 
-      router.push("/owner/lists");
+      // 2. EXTRACT THE NEW LISTING ID FROM THE BACKEND
+      const responseData = await response.json();
+      const newListingId = responseData.listingId;
+
+      if (!newListingId) {
+        throw new Error("Listing created, but backend did not return the listing ID.");
+      }
+
+      // 3. CALL YOUR STRIPE CHECKOUT ENDPOINT
+      const stripeResponse = await fetch(`${API_BASE}/api/payments/${newListingId}/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!stripeResponse.ok) {
+        throw new Error("Listing saved, but failed to initialize Stripe payment gateway.");
+      }
+
+      const stripeData = await stripeResponse.json();
+
+      // 4. BOUNCE THE USER TO STRIPE
+      if (stripeData.sessionUrl) {
+        // This instantly redirects the browser to the secure Stripe hosted checkout
+        window.location.href = stripeData.sessionUrl;
+      } else {
+        // Failsafe: If no URL is returned, just go back to the owner lists
+        router.push("/owner/lists");
+      }
+
     } catch (err) {
       console.error(err);
-      alert("Failed to submit listing: " + err.message);
+      alert("Failed to process submission: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+
 
   return (
     <div className="p-8 md:p-12 max-w-4xl mx-auto">
@@ -635,7 +668,7 @@ export default function AddNewLand() {
               "Submitting..."
             ) : (
               <>
-                Submit for Approval <CheckCircle size={18} />
+                Save & Proceed to Payment<CheckCircle size={18} />
               </>
             )}
           </button>
