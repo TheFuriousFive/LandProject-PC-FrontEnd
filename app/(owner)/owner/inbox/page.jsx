@@ -45,8 +45,7 @@ export default function InboxPage() {
           err.response?.data?.message ||
             "Failed to load inbox. Please try again later.",
         );
-        // Fallback data for local demo mode.
-        setInboxItems(getSampleInboxItems());
+        setInboxItems([]);
       } finally {
         setLoading(false);
       }
@@ -54,39 +53,6 @@ export default function InboxPage() {
 
     fetchInbox();
   }, []);
-
-  const getSampleInboxItems = () => [
-    {
-      id: "msg-001",
-      investorName: "John Smith",
-      investorEmail: "john@example.com",
-      investorPhone: "+1-555-0101",
-      adTitle: "Riverside Land Plot, 2.5 Acres",
-      adLocation: "Downtown New York, NY",
-      adPrice: 125000,
-      message: "Interested in this ad. Please share ownership and survey details.",
-    },
-    {
-      id: "msg-002",
-      investorName: "Sarah Johnson",
-      investorEmail: "sarah@example.com",
-      investorPhone: "+1-555-0102",
-      adTitle: "Mountain View Estate, 5 Acres",
-      adLocation: "Boulder, CO",
-      adPrice: 295000,
-      message: "Can you confirm zoning status and nearest road access?",
-    },
-    {
-      id: "msg-003",
-      investorName: "Michael Chen",
-      investorEmail: "michael@example.com",
-      investorPhone: "+1-555-0103",
-      adTitle: "Lakeside Property, 3 Acres",
-      adLocation: "Seattle, WA",
-      adPrice: 210000,
-      message: "I want to know if the title deed is available for review.",
-    },
-  ];
 
   const totalMessages = inboxItems.length;
 
