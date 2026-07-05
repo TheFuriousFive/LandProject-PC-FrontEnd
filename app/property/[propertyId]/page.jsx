@@ -26,6 +26,21 @@ const normalizeStatus = (listing) =>
 
 const isApprovedListing = (listing) => normalizeStatus(listing) === "approved";
 
+// Roles: "investor", "owner", "authenticator"
+// - "owner": can bypass the approval gate for ANY listing (no ownership check)
+// - "authenticator": can bypass the approval gate for any listing (they review/approve listings)
+// - "investor" / anyone else: only ever sees approved listings
+const getStoredUserRole = () => {
+  if (typeof window === "undefined") return "";
+  const rawRole = localStorage.getItem("userRole") || "";
+  return rawRole.replace(/^"|"$/g, "").trim().toLowerCase();
+};
+
+const canBypassApprovalGate = (userRole) => {
+  const role = String(userRole || "").toLowerCase();
+  return role === "owner" || role === "authenticator";
+};
+
 const getFallbackProperties = () => [
   {
     id: 1,
@@ -132,12 +147,18 @@ export default function PropertyDetailsPage() {
         // 1. Hit the specific endpoint you built for single property details
         const propertyRes = await fetch(
           `${API_BASE}/api/listings/details/${params.propertyId}`,
-          { headers }
+          { headers },
         );
 
         if (!propertyRes.ok) {
-          console.error("Fetch property details error status:", propertyRes.status, propertyRes.statusText);
-          throw new Error(`Failed to fetch property details: ${propertyRes.status}`);
+          console.error(
+            "Fetch property details error status:",
+            propertyRes.status,
+            propertyRes.statusText,
+          );
+          throw new Error(
+            `Failed to fetch property details: ${propertyRes.status}`,
+          );
         }
 
         // 2. The backend already returns just the SINGLE property object, no array filtering needed!
@@ -149,12 +170,22 @@ export default function PropertyDetailsPage() {
 
         // 3. Since the backend handles verification logic, we can trust the DTO status.
         // (Make sure the status check aligns with your LandListingDetailDTO Enum)
-        const normalizedStatus = String(propertyData.verificationStatus || propertyData.status || "").toLowerCase();
+        const normalizedStatus = String(
+          propertyData.verificationStatus || propertyData.status || "",
+        ).toLowerCase();
 
-        // ... continue to the fallback mapping
-                
-                
-        if (normalizedStatus !== "approved") {
+        // Owners and authenticators can bypass the approval gate for ANY listing.
+        // Investors (and anyone else) only ever see approved listings.
+        const currentUserRole = getStoredUserRole();
+        const userCanBypass = canBypassApprovalGate(currentUserRole);
+
+        console.log("DEBUG bypass check:", {
+          status: normalizedStatus,
+          currentUserRole,
+          userCanBypass,
+        });
+
+        if (normalizedStatus !== "approved" && !userCanBypass) {
           throw new Error("Property not found in search results");
         }
 
@@ -170,20 +201,23 @@ export default function PropertyDetailsPage() {
           currency: "USD", // Hardcoded safely
           landType: propertyData.landType || "Unknown",
           surveyNumber: "N/A", // Hardcoded safely
-          status: propertyData.verificationStatus || propertyData.status || "unknown",
+          status:
+            propertyData.verificationStatus || propertyData.status || "unknown",
           description: propertyData.description || "No description provided.",
-          images: propertyData.imageUrls && propertyData.imageUrls.length > 0
+          images:
+            propertyData.imageUrls && propertyData.imageUrls.length > 0
               ? propertyData.imageUrls
               : [
                   "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800",
                   "https://images.unsplash.com/photo-1574082168995-b2b5e1cbf59f?q=80&w=800",
                 ],
-          
+
           // FIXED: Now accurately grabs the backend owner name and ID
           owner: {
-            id: propertyData.ownerId || "owner-123", 
-            name: propertyData.ownerName || "Unknown Owner", 
-            avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
+            id: propertyData.ownerId || "owner-123",
+            name: propertyData.ownerName || "Unknown Owner",
+            avatar:
+              "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
             joinDate: "2023-01-15",
             verified: true,
             phone: "N/A",
@@ -194,12 +228,12 @@ export default function PropertyDetailsPage() {
             kycCompleted: true,
             accountAgeMonths: 12,
           },
-          
+
           keywords: [], // Empty array fallback
-          
+
           // FIXED: Mapped your backend deedDocumentUrls!
-          documents: propertyData.deedDocumentUrls || [], 
-          
+          documents: propertyData.deedDocumentUrls || [],
+
           connectivity: {
             nearbySchools: 0,
             nearbyHospitals: 0,
@@ -220,7 +254,7 @@ export default function PropertyDetailsPage() {
           reviews: propertyData.reviews || [],
           questions: propertyData.questions || [],
         };
-        
+
         // Fetch questions
         try {
           const qRes = await fetch(
@@ -262,10 +296,14 @@ export default function PropertyDetailsPage() {
           localStorage.getItem("land_listings") || "[]",
         );
         const combinedListings = [...localListings, ...fallbackProperties];
+
+        const currentUserRole = getStoredUserRole();
+        const userCanBypass = canBypassApprovalGate(currentUserRole);
+
         const approvedListing = combinedListings.find(
           (listing) =>
             String(listing.id) === String(params.propertyId) &&
-            isApprovedListing(listing),
+            (isApprovedListing(listing) || userCanBypass),
         );
 
         if (approvedListing) {
