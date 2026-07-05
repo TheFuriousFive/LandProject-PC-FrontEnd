@@ -1,175 +1,109 @@
 "use client";
 
 import { useState } from "react";
+import { Send, CheckCircle, AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export default function ContactInquiryCard({
-  ownerName = "Owner",
-  listingId = null,
-}) {
-  const firstName = ownerName.split(" ")[0] || ownerName;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-  const [contactForm, setContactForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    message: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default function ContactInquiryCard({ ownerName, listingId }) {
+  const router = useRouter();
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState("idle"); // idle, submitting, success, error
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleContactSubmit = async (e) => {
+  const handleSendInquiry = async (e) => {
     e.preventDefault();
+    if (!message.trim()) return;
 
-    if (listingId) {
-      setIsSubmitting(true);
-      try {
-        const token = (localStorage.getItem("token") || "")
-          .replace(/^"|"$/g, "")
-          .trim();
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/landapp/investors/listings/${listingId}/inquiry`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            // The inquire endpoint does not expect a body according to the backend code provided:
-            // @PostMapping("/listings/{listingId}/inquiry")
-            // public ResponseEntity<String> inquire(@PathVariable Long listingId)
-          },
-        );
+    setStatus("submitting");
 
-        if (res.ok) {
-          alert(`Inquiry sent to ${ownerName}.`);
-          setContactForm({ name: "", phone: "", email: "", message: "" });
-        } else {
-          alert("Failed to send inquiry.");
-        }
-      } catch (err) {
-        console.error("Error sending inquiry:", err);
-        alert("Error sending inquiry.");
-      } finally {
-        setIsSubmitting(false);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token")?.replace(/^"|"$/g, "") : "";
+      
+      if (!token) {
+        alert("Please log in as an Investor to contact the owner.");
+        router.push("/login");
+        return;
       }
-    } else {
-      // Fallback
-      alert(`Inquiry sent to ${ownerName}.`);
-      setContactForm({ name: "", phone: "", email: "", message: "" });
+
+      const response = await fetch(`${API_BASE}/landapp/investors/listings/${listingId}/inquiry`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ message: message }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || "Failed to send inquiry");
+      }
+
+      setStatus("success");
+      setMessage(""); // Clear the box
+    } catch (error) {
+      console.error(error);
+      setStatus("error");
+      setErrorMessage(
+        error.message.includes("already sent") 
+          ? "You have already sent an inquiry for this property." 
+          : "Something went wrong. Please try again."
+      );
     }
   };
 
   return (
-    <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-6 pt-6 pb-4 border-b border-gray-100">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-xl font-extrabold text-gray-900">
-            Meet {ownerName}
-          </h3>
-          <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 border border-green-200 px-3 py-1 text-xs font-bold uppercase tracking-wide">
-            Verified Seller
-          </span>
-        </div>
-      </div>
+    <div className="bg-white rounded-2xl p-6 border border-gray-200 sticky top-6 shadow-sm">
+      <h3 className="text-xl font-extrabold text-gray-900 mb-2">
+        Interested in this land?
+      </h3>
+      <p className="text-sm text-gray-600 mb-6">
+        Send a direct inquiry to {ownerName || "the owner"}. They will get back to you via email or phone.
+      </p>
 
-      <div className="px-6 pt-4">
-        <div className="flex border-b border-gray-200">
-          <button
-            type="button"
-            className="px-4 py-3 text-sm font-bold text-slate-900 border-b-2 border-slate-900"
-          >
-            Contact {ownerName}
-          </button>
+      {status === "success" ? (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+          <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
+          <p className="font-bold text-green-900 mb-1">Inquiry Sent!</p>
+          <p className="text-sm text-green-700">
+            Check your <a href="/investor/responses" className="underline font-bold">Responses Dashboard</a> for updates.
+          </p>
         </div>
-      </div>
-
-      <form onSubmit={handleContactSubmit} className="px-6 py-5 space-y-4">
-        <div>
-          <label
-            htmlFor={`contact-name-${firstName}`}
-            className="block text-sm font-semibold text-gray-700 mb-1.5"
-          >
-            Name
-          </label>
-          <input
-            id={`contact-name-${firstName}`}
-            type="text"
-            value={contactForm.name}
-            onChange={(e) =>
-              setContactForm((prev) => ({ ...prev, name: e.target.value }))
-            }
-            placeholder="Enter your full name"
-            required
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor={`contact-phone-${firstName}`}
-            className="block text-sm font-semibold text-gray-700 mb-1.5"
-          >
-            Phone
-          </label>
-          <input
-            id={`contact-phone-${firstName}`}
-            type="tel"
-            value={contactForm.phone}
-            onChange={(e) =>
-              setContactForm((prev) => ({ ...prev, phone: e.target.value }))
-            }
-            placeholder="Enter your phone number"
-            required
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor={`contact-email-${firstName}`}
-            className="block text-sm font-semibold text-gray-700 mb-1.5"
-          >
-            Email
-          </label>
-          <input
-            id={`contact-email-${firstName}`}
-            type="email"
-            value={contactForm.email}
-            onChange={(e) =>
-              setContactForm((prev) => ({ ...prev, email: e.target.value }))
-            }
-            placeholder="Enter your email address"
-            required
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor={`contact-message-${firstName}`}
-            className="block text-sm font-semibold text-gray-700 mb-1.5"
-          >
-            Message (Optional)
-          </label>
+      ) : (
+        <form onSubmit={handleSendInquiry} className="space-y-4">
           <textarea
-            id={`contact-message-${firstName}`}
-            value={contactForm.message}
-            onChange={(e) =>
-              setContactForm((prev) => ({ ...prev, message: e.target.value }))
-            }
-            placeholder="Write any specific questions or requests"
-            rows={5}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Hi, I would like to know more about..."
+            rows="4"
+            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:ring-[#9afb21] focus:border-[#9afb21] outline-none transition-colors resize-none"
+            required
           />
-        </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? "Sending..." : `Contact ${firstName}`}
-        </button>
-      </form>
-    </section>
+          {status === "error" && (
+            <div className="flex items-start gap-2 text-red-600 text-xs font-medium bg-red-50 p-3 rounded-lg border border-red-100">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <p>{errorMessage}</p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={status === "submitting" || !message.trim()}
+            className="w-full flex items-center justify-center gap-2 bg-[#0f0f11] text-[#9afb21] py-3.5 rounded-xl font-bold hover:bg-black transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {status === "submitting" ? (
+              "Sending..."
+            ) : (
+              <>
+                <Send size={16} /> Send Inquiry
+              </>
+            )}
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
