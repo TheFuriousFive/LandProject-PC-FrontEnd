@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -64,22 +65,22 @@ export default function HeroLeft() {
         variants={itemVariants}
         className="flex flex-col sm:flex-row gap-4"
       >
-        <a
-          href="#"
+        <Link
+          href="/register"
           className="group relative inline-flex items-center justify-center gap-2 bg-[#6EE53B] hover:bg-[#5acc2e] text-[#0e0e0e] font-bold text-sm tracking-wide px-7 py-4 rounded-xl transition-all duration-200 shadow-[0_4px_20px_rgba(110,229,59,0.35)] hover:shadow-[0_6px_28px_rgba(110,229,59,0.55)] hover:-translate-y-0.5 active:translate-y-0"
         >
           Start Investing
           <span className="transition-transform duration-200 group-hover:translate-x-1">
             →
           </span>
-        </a>
+        </Link>
 
-        <a
-          href="#"
+        <Link
+          href="/register"
           className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] hover:bg-[#252525] text-white font-bold text-sm tracking-wide px-7 py-4 rounded-xl transition-all duration-200 border border-[#2e2e2e] hover:border-[#444] hover:-translate-y-0.5 active:translate-y-0"
         >
           List Your Land
-        </a>
+        </Link>
       </motion.div>
 
       {/* Trust badges */}
